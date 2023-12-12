@@ -30,13 +30,13 @@ export class BeatController implements OnRender {
 
     Log.info(`Started song "${this.currentSong.Instance.Name}" via BeatController`);
     task.spawn(() => this.currentSong!.Instance.Audio.Play());
-    this.onBeat = new Signal;
     this.active = true;
   }
 
   public stop(): void {
     this.active = false;
     this.onBeat?.Destroy();
+    this.onBeat = new Signal;
   }
 
   public getBeatDuration() {

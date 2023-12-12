@@ -9,7 +9,7 @@ export class BeatVisualizer extends BaseComponent<{}, Frame & { UIStroke: UIStro
     tween(
       this.instance.UIStroke,
       new TweenInfoBuilder()
-        .SetTime(0.05)
+        .SetTime(0.02)
         .SetEasingStyle(Enum.EasingStyle.Linear)
         .SetEasingDirection(Enum.EasingDirection.In)
         .SetReverses(true),

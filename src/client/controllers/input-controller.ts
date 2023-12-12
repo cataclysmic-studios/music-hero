@@ -40,19 +40,18 @@ export class InputController implements OnInit {
   }
 
   private attemptNote(currentNotes: Model, notePosition: 1 | 2 | 3 | 4) {
-    const validPosition = NOTE_POSITIONS[notePosition - 1];
-    const pressedNote = this.getNotesInRadius(currentNotes)
-      .find(note => note.Position.X === validPosition);
-
+    const [pressedNote] = this.getNotesInRadius(currentNotes, notePosition)
     if (pressedNote) {
       pressedNote.Destroy();
       Log.info("Completed note!");
     }
   }
 
-  private getNotesInRadius(currentNotes: Model) {
+  private getNotesInRadius(currentNotes: Model, notePosition: 1 | 2 | 3 | 4) {
+    const validPosition = NOTE_POSITIONS[notePosition - 1];
     return (<Part[]>currentNotes.GetChildren())
-      .filter(note => { return note.Position.Z >= -VALID_NOTE_RADIUS})
+      .filter(note => note.Position.X === validPosition)
+      .filter(note => note.Position.Z >= -VALID_NOTE_RADIUS)
       .sort((noteA, noteB) => noteA.Position.Z > noteB.Position.Z);
   }
 }
