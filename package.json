@@ -31,6 +31,7 @@
     "@rbxts/builders": "^1.0.2",
     "@rbxts/datastore2": "^1.4.0-ts.0",
     "@rbxts/gamejoy": "^1.1.4",
+    "@rbxts/janitor": "^1.15.4-ts.0",
     "@rbxts/strict-map": "^1.0.2",
     "@rbxts/string-utils": "^1.0.3",
     "rbxts-transformer-switchcase": "^1.0.1"

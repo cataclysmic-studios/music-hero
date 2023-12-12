@@ -1,5 +1,5 @@
 {
-	"name": "FlameworkGame",
+	"name": "Music-Hero",
 	"globIgnorePaths": [
 		"**/package.json",
 		"**/tsconfig.json"

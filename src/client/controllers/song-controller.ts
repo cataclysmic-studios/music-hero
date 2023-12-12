@@ -1,9 +1,11 @@
 import { Controller, OnStart, type OnRender } from "@flamework/core";
 import type { Components } from "@flamework/components";
 import { CollectionService, StarterGui } from "@rbxts/services";
+import { Janitor } from "@rbxts/janitor";
 
 import { Assets } from "shared/utilities/helpers";
 import { SongDifficulty, type SongInfo } from "shared/structs/song-info";
+import { VALID_NOTE_RADIUS } from "shared/constants";
 import Log from "shared/logger";
 
 import type { RhythmBoard } from "client/components/rhythm-board";
@@ -11,15 +13,19 @@ import type { BeatVisualizer } from "client/components/ui/beat-visualizer";
 import type { BeatController } from "./beat-controller";
 
 const BEAT_STUD_LENGTH = 12;
-const NOTE_COMPLETION_POSITION = 0;
+const NOTE_COMPLETION_POSITION = 0 + VALID_NOTE_RADIUS;
 
 @Controller()
 export class SongController implements OnStart, OnRender {
+  private readonly songJanitor = new Janitor;
+
   private elapsed = 0;
   private difficulty = SongDifficulty.Expert;
   private part: keyof SongParts = "Lead";
   private defaultNoteTrackPivot?: CFrame;
   private rhythmBoard?: RhythmBoard;
+
+  public noteTrack?: Model;
 
   public constructor(
     private readonly components: Components,
@@ -33,13 +39,13 @@ export class SongController implements OnStart, OnRender {
 
     this.beatController.currentSong = this.getSongInfo("Paradise Falls");
     this.setDifficulty(SongDifficulty.Easy);
-    const noteTrack = this.assignPart("Drums");
-    this.defaultNoteTrackPivot = noteTrack.GetPivot();
+    this.assignPart("Drums");
 
     const beatVisualizerFrame = <Frame>CollectionService.GetTagged("BeatVisualizer").find(instance => !instance.IsDescendantOf(StarterGui));
     const beatVisualizer = await this.components.waitForComponent<BeatVisualizer>(beatVisualizerFrame);
     this.beatController.onBeat.Connect(() => beatVisualizer.visualizeBeat());
-    task.delay(1, () => this.beatController.start());
+    this.beatController.start();
+    this.beatController.currentSong?.Instance.Audio.Ended.Once(() => this.cleanup());
   }
 
   public onRender(dt: number): void {
@@ -49,37 +55,35 @@ export class SongController implements OnStart, OnRender {
     this.elapsed += dt;
   }
 
-  private updateRhythmBoard() {
+  private updateRhythmBoard(): void {
     const beatDuration = this.beatController.getBeatDuration();
-    const partNotes = <Model>this.rhythmBoard!.instance.Parent!.WaitForChild("Notes");
     const lerpPosition = (this.elapsed / beatDuration) * BEAT_STUD_LENGTH;
     this.rhythmBoard!.instance.Grid.OffsetStudsV = lerpPosition;
-    partNotes.PivotTo(this.defaultNoteTrackPivot!.add(new Vector3(0, 0, lerpPosition)));
+    this.noteTrack!.PivotTo(this.defaultNoteTrackPivot!.add(new Vector3(0, 0, lerpPosition)));
 
     task.spawn(() => {
-      for (const note of <MeshPart[]>partNotes.GetChildren())
-        task.spawn(() => {
-          if (note.Position.Z >= NOTE_COMPLETION_POSITION)
-            note.Destroy();
-        });
+      for (const note of <MeshPart[]>this.noteTrack!.GetChildren())
+        if (note.Position.Z >= NOTE_COMPLETION_POSITION) {
+          Log.info("Failed note!");
+          note.Destroy();
+        }
     });
   }
 
   public setDifficulty(difficulty: SongDifficulty): void {
     this.difficulty = difficulty;
-    Log.info(`Assigned difficulty "${this.getDifficultyName()}"`);
+    this.assignPart(this.part);
   }
 
-  public assignPart(partName: keyof SongParts): Model {
+  public assignPart(partName: keyof SongParts): void {
     const difficultyName = this.getDifficultyName();
     const songParts = this.beatController.currentSong!.Instance.Parts;
-    const partNotes = songParts[difficultyName][partName];
+    this.noteTrack = this.songJanitor.Add(songParts[difficultyName][partName].Clone());
+    this.defaultNoteTrackPivot = this.noteTrack.GetPivot();
 
-    Log.info(`Assigned part "${partName}"`);
+    Log.info(`Assigned part "${partName}" on "${difficultyName}"`);
+    this.rhythmBoard!.setNoteTrack(this.noteTrack);
     this.part = partName;
-    this.rhythmBoard!.addInstrumentTrack(partNotes);
-
-    return partNotes;
   }
 
   public getSongInfo(songName: ExtractKeys<typeof Assets.Songs, SongData>): SongInfo {
@@ -93,7 +97,10 @@ export class SongController implements OnStart, OnRender {
   }
 
   private cleanup(): void {
-
+    Log.info("Cleaned up song");
+    this.songJanitor.Cleanup();
+    this.beatController.stop();
+    this.noteTrack = undefined;
   }
 
   private getDifficultyName(): keyof typeof SongDifficulty {

@@ -19,9 +19,6 @@ export class BeatController implements OnRender {
     const beatDuration = this.getBeatDuration();
 
     if (this.elapsed >= beatDuration) {
-      if (!this.onBeat)
-        this.onBeat = new Signal;
-
       this.onBeat.Fire();
       this.elapsed -= beatDuration;
     }
@@ -33,6 +30,7 @@ export class BeatController implements OnRender {
 
     Log.info(`Started song "${this.currentSong.Instance.Name}" via BeatController`);
     task.spawn(() => this.currentSong!.Instance.Audio.Play());
+    this.onBeat = new Signal;
     this.active = true;
   }
 
