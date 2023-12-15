@@ -5,15 +5,11 @@ import { Janitor } from "@rbxts/janitor";
 
 import { Assets } from "shared/utilities/helpers";
 import { SongDifficulty, type SongInfo } from "shared/structs/song-info";
-import { VALID_NOTE_RADIUS } from "shared/constants";
 import Log from "shared/logger";
 
 import type { RhythmBoard } from "client/components/rhythm-board";
 import type { BeatVisualizer } from "client/components/ui/beat-visualizer";
 import type { BeatController } from "./beat-controller";
-
-const BEAT_STUD_LENGTH = 12;
-const NOTE_COMPLETION_POSITION = 0 + VALID_NOTE_RADIUS;
 
 @Controller()
 export class SongController implements OnStart, OnRender {
@@ -22,10 +18,7 @@ export class SongController implements OnStart, OnRender {
   private elapsed = 0;
   private difficulty = SongDifficulty.Expert;
   private part: keyof SongParts = "Lead";
-  private defaultNoteTrackPivot?: CFrame;
   private rhythmBoard?: RhythmBoard;
-
-  public noteTrack?: Model;
 
   public constructor(
     private readonly components: Components,
@@ -37,7 +30,8 @@ export class SongController implements OnStart, OnRender {
     const boardModel = <Part>CollectionService.GetTagged("RhythmBoard").find(instance => !instance.IsDescendantOf(StarterGui));
     this.rhythmBoard = await this.components.waitForComponent<RhythmBoard>(boardModel);
 
-    this.beatController.currentSong = this.getSongInfo("Paradise Falls");
+    // temp
+    this.set("Paradise Falls");
     this.setDifficulty(SongDifficulty.Easy);
     this.assignPart("Drums");
 
@@ -49,25 +43,15 @@ export class SongController implements OnStart, OnRender {
   }
 
   public onRender(dt: number): void {
-    if (!this.beatController.active) return;
+    if (!this.beatController.active || !this.rhythmBoard) return;
 
-    this.updateRhythmBoard();
+    this.rhythmBoard.update(this.elapsed);
     this.elapsed += dt;
   }
 
-  private updateRhythmBoard(): void {
-    const beatDuration = this.beatController.getBeatDuration();
-    const lerpPosition = (this.elapsed / beatDuration) * BEAT_STUD_LENGTH;
-    this.rhythmBoard!.instance.Grid.OffsetStudsV = lerpPosition;
-    this.noteTrack!.PivotTo(this.defaultNoteTrackPivot!.add(new Vector3(0, 0, lerpPosition)));
-
-    task.spawn(() => {
-      for (const note of <MeshPart[]>this.noteTrack!.GetChildren())
-        if (note.Position.Z >= NOTE_COMPLETION_POSITION) {
-          Log.info("Failed note!");
-          note.Destroy();
-        }
-    });
+  public set(songName: ExtractKeys<typeof Assets.Songs, SongData>): void {
+    this.beatController.currentSong = this.getSongInfo(songName);
+    this.rhythmBoard!.beatDuration = this.beatController.getBeatDuration();
   }
 
   public setDifficulty(difficulty: SongDifficulty): void {
@@ -78,15 +62,18 @@ export class SongController implements OnStart, OnRender {
   public assignPart(partName: keyof SongParts): void {
     const difficultyName = this.getDifficultyName();
     const songParts = this.beatController.currentSong!.Instance.Parts;
-    this.noteTrack = this.songJanitor.Add(songParts[difficultyName][partName].Clone());
-    this.defaultNoteTrackPivot = this.noteTrack.GetPivot();
+    const noteTrack = this.songJanitor.Add(songParts[difficultyName][partName].Clone());
 
     Log.info(`Assigned part "${partName}" on "${difficultyName}"`);
-    this.rhythmBoard!.setNoteTrack(this.noteTrack);
+    this.rhythmBoard!.setNoteTrack(noteTrack);
     this.part = partName;
   }
 
-  public getSongInfo(songName: ExtractKeys<typeof Assets.Songs, SongData>): SongInfo {
+  public getCurrentNoteTrack(): Maybe<Model> {
+    return this.rhythmBoard?.noteTrack;
+  }
+
+  private getSongInfo(songName: ExtractKeys<typeof Assets.Songs, SongData>): SongInfo {
     const song = Assets.Songs[songName];
     const tempo = <number>song.GetAttribute("Tempo");
 
@@ -100,7 +87,7 @@ export class SongController implements OnStart, OnRender {
     Log.info("Cleaned up song");
     this.songJanitor.Cleanup();
     this.beatController.stop();
-    this.noteTrack = undefined;
+    this.elapsed = 0;
   }
 
   private getDifficultyName(): keyof typeof SongDifficulty {
