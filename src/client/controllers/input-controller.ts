@@ -1,7 +1,7 @@
 import { Controller, OnInit } from "@flamework/core";
 import { Context as InputContext } from "@rbxts/gamejoy";
 
-import { VALID_NOTE_RADIUS } from "shared/constants";
+import { PERFECT_NOTE_RADIUS, VALID_NOTE_RADIUS } from "shared/constants";
 import Log from "shared/logger";
 
 import type { SongController } from "./song-controller";
@@ -31,14 +31,15 @@ export class InputController implements OnInit {
     const [pressedNote] = this.getNotesInRadius(notePosition);
     if (!pressedNote) return;
 
+    const perfectNote = math.abs(pressedNote.Position.Z) <= PERFECT_NOTE_RADIUS;
     pressedNote.Destroy();
-    Log.info("Completed note!");
+    Log.info("Completed note!" + (perfectNote ? " (perfect)" : ""));
   }
 
   private getNotesInRadius(notePosition: NotePosition) {
     return this.getNotesInPosition(notePosition)
       .sort((noteA, noteB) => noteA.Position.Z > noteB.Position.Z)
-      .filter(note => note.Position.Z > 0 ? note.Position.Z <= VALID_NOTE_RADIUS : note.Position.Z >= -VALID_NOTE_RADIUS);
+      .filter(note => note.Position.Z > 0 ? note.Position.Z <= VALID_NOTE_RADIUS / 1.5 : note.Position.Z >= -VALID_NOTE_RADIUS);
   }
 
   private getNotesInPosition(notePosition: NotePosition) {
