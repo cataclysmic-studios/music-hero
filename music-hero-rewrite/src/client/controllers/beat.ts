@@ -34,10 +34,8 @@ export class BeatController implements OnRender {
     this.active = true;
   }
 
-  public stop(this: Writable<this>): void {
+  public stop(): void {
     this.active = false;
-    this.onBeat?.Destroy();
-    this.onBeat = new Signal;
   }
 
   public getBeatDuration(): number {

@@ -6,7 +6,7 @@ import { $nameof } from "rbxts-transform-debug";
 
 import { PlayerGui } from "client/utility";
 
-import type { RhythmBoard } from "../rhythm-board";
+import type { RhythmBoard } from "../../rhythm-board";
 
 @Component({
   tag: $nameof<RhythmHUD>(),
