@@ -25,6 +25,7 @@ export class ScoreController implements OnStart {
   public readonly current = atom(0);
   public readonly multiplier = atom(1);
   public readonly nextMultiplierProgress = atom(0);
+  public readonly starsProgress = atom(0);
   public goodNotes = 0;
   public perfectNotes = 0;
   public totalNotes = 0;

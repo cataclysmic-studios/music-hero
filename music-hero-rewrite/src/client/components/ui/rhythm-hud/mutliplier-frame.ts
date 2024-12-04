@@ -21,19 +21,21 @@ export class MultiplierFrame extends BaseComponent<{}, Frame & { Label: TextLabe
   ) { super(); }
 
   public onStart(): void {
-    this.updateProgressBar();
+    this.updateProgressBar(this.score.nextMultiplierProgress() / 1000);
     this.instance.GetPropertyChangedSignal("AbsoluteSize")
-      .Connect(() => this.updateProgressBar());
+      .Connect(() => this.updateProgressBar(this.score.nextMultiplierProgress() / 1000));
 
-    subscribe(this.score.multiplier, multiplier => this.instance.Label.Text = `${multiplier}x`);
-    subscribe(this.score.nextMultiplierProgress, progress => {
-      this.currentProgress = progress / 100;
-      this.updateProgressBar();
-    });
+    this.update(this.score.multiplier());
+    subscribe(this.score.multiplier, multiplier => this.update(multiplier));
+    subscribe(this.score.nextMultiplierProgress, progress => this.updateProgressBar(progress / 100));
   }
 
-  private updateProgressBar(): void {
-    const borderThickness = this.calculateBorderThickness() * this.currentProgress;
+  private update(multiplier: number): void {
+    this.instance.Label.Text = `${multiplier}x`;
+  }
+
+  private updateProgressBar(progress: number): void {
+    const borderThickness = this.calculateBorderThickness() * progress;
     const tweenInfo = new TweenInfoBuilder()
       .SetTime(0.06)
       .SetEasingStyle(Enum.EasingStyle.Sine)

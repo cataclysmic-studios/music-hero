@@ -25,10 +25,13 @@ export class OverdriveBar extends BaseComponent<{}, Frame & { Progress: Frame }>
   public onStart(): void {
     this.instance.Progress.Size = UDim2.fromScale(0, 1);
 
-    subscribe(this.score.overdriveProgress, progress =>
-      tween(this.instance.Progress, this.tweenInfo, {
-        Size: UDim2.fromScale(progress / 100, 1)
-      })
-    );
+    this.update(this.score.overdriveProgress());
+    subscribe(this.score.overdriveProgress, progress => this.update(progress));
+  }
+
+  private update(progress: number): void {
+    tween(this.instance.Progress, this.tweenInfo, {
+      Size: UDim2.fromScale(progress / 100, 1)
+    });
   }
 }

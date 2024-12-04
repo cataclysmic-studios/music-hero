@@ -1,26 +1,26 @@
 import { Controller, OnStart, type OnRender } from "@flamework/core";
 import type { Components } from "@flamework/components";
-import { CollectionService, StarterGui, SoundService as Sound } from "@rbxts/services";
+import { SoundService as Sound } from "@rbxts/services";
 import { Janitor } from "@rbxts/janitor";
 import { atom } from "@rbxts/charm";
 
 import { Assets } from "shared/constants";
+import { PlayerGui } from "client/utility";
 import { SongDifficulty, type SongInfo } from "shared/structs/song-info";
 import Log from "shared/log";
 
+import type { RhythmHUD } from "client/components/ui/rhythm-hud";
 import type { RhythmBoard } from "client/components/rhythm-board";
 import type { BeatController } from "./beat";
 import type { ScoreController } from "./score";
-import { PlayerGui } from "client/utility";
-import { RhythmHUD } from "client/components/ui/rhythm-hud";
 
 @Controller()
 export class SongController implements OnStart, OnRender {
+  public readonly part = atom<keyof SongParts>("Lead");
   public difficulty = SongDifficulty.Expert;
 
   private readonly songJanitor = new Janitor;
   private rhythmBoard!: RhythmBoard;
-  private part = atom<keyof SongParts>("Lead");
   private elapsed = 0;
 
   public constructor(
