@@ -26,12 +26,12 @@ export class ScoreController implements OnStart {
   public readonly multiplier = atom(1);
   public readonly nextMultiplierProgress = atom(0);
   public readonly starsProgress = atom(0);
+  public rhythmHUD!: RhythmHUD;
   public goodNotes = 0;
   public perfectNotes = 0;
   public totalNotes = 0;
   public missedNotes = 0;
 
-  private rhythmHUD!: RhythmHUD;
   private currentSong?: SongName;
   private inOverdrive = false;
 

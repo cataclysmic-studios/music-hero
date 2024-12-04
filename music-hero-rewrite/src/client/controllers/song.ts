@@ -1,42 +1,33 @@
-import { Controller, OnStart, type OnRender } from "@flamework/core";
-import type { Components } from "@flamework/components";
+import { Controller, type OnRender } from "@flamework/core";
 import { SoundService as Sound } from "@rbxts/services";
 import { Janitor } from "@rbxts/janitor";
 import { atom } from "@rbxts/charm";
 
 import { Assets } from "shared/constants";
-import { PlayerGui } from "client/utility";
 import { SongDifficulty, type SongInfo } from "shared/structs/song-info";
 import Log from "shared/log";
 
-import type { RhythmHUD } from "client/components/ui/rhythm-hud";
-import type { RhythmBoard } from "client/components/rhythm-board";
 import type { BeatController } from "./beat";
 import type { ScoreController } from "./score";
 
 @Controller()
-export class SongController implements OnStart, OnRender {
+export class SongController implements OnRender {
   public readonly part = atom<keyof SongParts>("Lead");
   public difficulty = SongDifficulty.Expert;
 
   private readonly songJanitor = new Janitor;
-  private rhythmBoard!: RhythmBoard;
   private elapsed = 0;
 
   public constructor(
-    private readonly components: Components,
     private readonly beatController: BeatController,
     private readonly score: ScoreController
   ) { }
 
-  public async onStart(): Promise<void> {
-    this.rhythmBoard = (await this.components.waitForComponent<RhythmHUD>(PlayerGui.WaitForChild("RhythmHUD"))).getBoard();
-  }
-
   public onRender(dt: number): void {
-    if (!this.beatController.active || this.rhythmBoard === undefined) return;
+    const rhythmBoard = this.score.rhythmHUD.getBoard();
+    if (!this.beatController.active || rhythmBoard === undefined) return;
 
-    this.rhythmBoard.update(this.elapsed);
+    rhythmBoard.update(this.elapsed);
     this.elapsed += dt;
   }
 
@@ -46,9 +37,10 @@ export class SongController implements OnStart, OnRender {
   }
 
   public set(songName: SongName): void {
+    const rhythmBoard = this.score.rhythmHUD.getBoard();
     this.score.setSong(songName);
     this.beatController.currentSong = this.getSongInfo(songName);
-    this.rhythmBoard.beatDuration = this.beatController.getBeatDuration();
+    rhythmBoard.beatDuration = this.beatController.getBeatDuration();
   }
 
   public setDifficulty(difficulty: SongDifficulty): void {
@@ -60,14 +52,15 @@ export class SongController implements OnStart, OnRender {
     const difficultyName = this.getDifficultyName();
     const songParts = this.beatController.currentSong!.Instance.Parts;
     const noteTrack = this.songJanitor.Add(songParts[difficultyName][partName].Clone());
+    const rhythmBoard = this.score.rhythmHUD.getBoard();
 
-    this.rhythmBoard.setNoteTrack(noteTrack);
+    rhythmBoard.setNoteTrack(noteTrack);
     this.score.setTotalNotes(noteTrack.GetChildren().size());
     this.part(partName);
   }
 
   public getCurrentNoteTrack(): Maybe<Model> {
-    return this.rhythmBoard?.noteTrack;
+    return this.score.rhythmHUD?.getBoard().noteTrack;
   }
 
   private async playIntroMetronome(): Promise<void> {
