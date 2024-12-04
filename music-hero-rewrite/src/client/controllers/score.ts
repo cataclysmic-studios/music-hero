@@ -1,11 +1,18 @@
 import { Controller, OnStart } from "@flamework/core";
+import type { Components } from "@flamework/components";
 import { atom } from "@rbxts/charm";
 import Signal from "@rbxts/signal";
 
 import { Events } from "client/network";
+import { PlayerGui } from "client/utility";
+import { SongDifficulty } from "shared/structs/song-info";
+import { VALID_NOTE_RADIUS } from "shared/constants";
 
-const { round, floor, clamp } = math;
+import type { RhythmHUD } from "client/components/ui/rhythm-hud";
 
+const { round, floor, clamp, abs } = math;
+
+const PERFECT_NOTE_RADIUS = VALID_NOTE_RADIUS / 2.5;
 const STAR_ACCURACY_THRESHOLDS = [35, 70, 80, 90, 95];
 const MAX_MULTIPLIER = 16;
 
@@ -19,6 +26,7 @@ export class ScoreController implements OnStart {
   public totalNotes = 0;
   public missedNotes = 0;
 
+  private rhythmHUD!: RhythmHUD;
   private currentSong?: SongName;
   private inOverdrive = false;
   private overdriveProgress = atom(0);
@@ -26,7 +34,12 @@ export class ScoreController implements OnStart {
   private multiplier = atom(1);
   private nextMultiplierProgress = atom(0);
 
-  public onStart(): void {
+  public constructor(
+    private readonly components: Components
+  ) { }
+
+  public async onStart(): Promise<void> {
+    this.rhythmHUD = await this.components.waitForComponent<RhythmHUD>(PlayerGui.WaitForChild("RhythmHUD"));
     this.updated.Fire();
   }
 
@@ -36,6 +49,34 @@ export class ScoreController implements OnStart {
 
   public setTotalNotes(totalNotes: number): void {
     this.totalNotes = totalNotes;
+  }
+
+  public attemptNote(notePosition: NotePosition, difficulty: SongDifficulty): void {
+    if (this.currentSong === undefined) return;
+    if (notePosition === 5 && difficulty !== SongDifficulty.Expert) return;
+    this.rhythmHUD.highlightFinishPosition(notePosition);
+
+    const board = this.rhythmHUD.getBoard();
+    const [pressedNote] = board.getNotesInRadius(notePosition);
+    if (!pressedNote) return;
+    if (pressedNote.Transparency > 0) return;
+    pressedNote.Transparency = 1;
+    print("pressed", notePosition)
+
+    const zPosition = pressedNote.Position.Z;
+    const noteParent = pressedNote.Parent;
+    pressedNote.Destroy();
+
+    task.spawn(() => {
+      const isPerfect = abs(zPosition) <= PERFECT_NOTE_RADIUS;
+      const lastOfOverdriveGroup = noteParent!.Name === "OverdriveGroup" && noteParent!.GetChildren().size() === 1;
+      if (lastOfOverdriveGroup)
+        this.addOverdriveProgress(25);
+
+      const accuracyRatio = 75; // if your note was 1 stud away, you'd have accuracyRatio% accuracy
+      this.addCompletedNote(isPerfect, math.clamp(abs(accuracyRatio / 100 / zPosition), 0.1, 1));
+      this.rhythmHUD.addNoteCompletionVFX(notePosition);
+    });
   }
 
   public add(amount: number): void {

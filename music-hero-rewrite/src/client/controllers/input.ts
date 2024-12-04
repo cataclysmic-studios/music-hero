@@ -1,20 +1,34 @@
 import { Controller } from "@flamework/core";
+import { UserInputService as UserInput } from "@rbxts/services";
 
 import type { LogStart } from "shared/hooks";
-import { OnInput, OnInputRelease } from "client/decorators";
+import { OnInput } from "client/decorators";
+
+import type { ReplicaController } from "./replica";
+import type { ScoreController } from "./score";
+import type { SongController } from "./song";
 
 /** Handles all game input */
 @Controller()
 export class InputController implements LogStart {
-  @OnInput("C", "crouch")
-  public crouch(): void {
-    // code for crouching
-    print("crouched")
+  public constructor(
+    replica: ReplicaController,
+    song: SongController,
+    private readonly score: ScoreController
+  ) {
+    UserInput.InputBegan.Connect((input, processed) => {
+      if (processed) return;
+
+      const { keybinds } = replica.data;
+      if (!keybinds.includes(input.KeyCode.Value)) return;
+
+      const position = <NotePosition>(keybinds.indexOf(input.KeyCode.Value)! + 1);
+      this.score.attemptNote(position, song.difficulty);
+    });
   }
 
-  @OnInputRelease("crouch")
-  public stand(): void {
-    // code for standing
-    print("stood")
+  @OnInput("Space")
+  public activateOverdrive(): void {
+    this.score.activateOverdrive();
   }
 }

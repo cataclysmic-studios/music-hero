@@ -2,6 +2,8 @@ import { ReplicatedFirst, RunService as Runtime } from "@rbxts/services";
 import Object from "@rbxts/object-utils";
 import Signal from "@rbxts/signal";
 
+export const VALID_NOTE_RADIUS = 2.5;
+
 enum DevID {
   Runic = 44966864
 }

@@ -1,4 +1,5 @@
 import { Component, BaseComponent } from "@flamework/components";
+import { $nameof } from "rbxts-transform-debug";
 
 import { PlayerGui } from "client/utility";
 
@@ -16,7 +17,7 @@ interface DebugScreenInstance extends ScreenGui {
 };
 
 @Component({
-  tag: "DebugScreen",
+  tag: $nameof<DebugScreen>(),
   ancestorWhitelist: [PlayerGui]
 })
 export class DebugScreen extends BaseComponent<{}, DebugScreenInstance> {
