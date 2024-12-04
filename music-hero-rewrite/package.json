@@ -1,5 +1,5 @@
 {
-  "name": "flamework-game",
+  "name": "music-hero",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,7 +10,7 @@
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/R-unic/flamework-template.git"
+    "url": "git+https://github.com/R-unic/music-hero.git"
   },
   "author": "",
   "license": "ISC",
