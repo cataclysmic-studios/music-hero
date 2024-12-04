@@ -1,9 +1,15 @@
 import { Controller } from "@flamework/core";
 
+import type { OnCharacterAdd } from "shared/hooks";
 import { Player } from "client/utility";
 
 @Controller()
-export class CharacterController {
+export class CharacterController implements OnCharacterAdd {
+  public onCharacterAdd(character: CharacterModel): void {
+    character.Humanoid.WalkSpeed = 0;
+    character.Humanoid.JumpHeight = 0;
+  }
+
   public isAlive(): boolean {
     const humanoid = this.getHumanoid();
     return humanoid !== undefined && humanoid.Health > 0;
