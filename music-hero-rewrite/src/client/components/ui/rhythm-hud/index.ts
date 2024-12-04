@@ -1,4 +1,4 @@
-import type { OnStart } from "@flamework/core";
+import { Dependency } from "@flamework/core";
 import { Component, BaseComponent, Components } from "@flamework/components";
 import { TweenInfoBuilder } from "@rbxts/builders";
 import { getChildrenOfType, tween } from "@rbxts/instance-utility";
@@ -7,29 +7,32 @@ import { $nameof } from "rbxts-transform-debug";
 import type { LogStart } from "shared/hooks";
 import { PlayerGui } from "client/utility";
 
-import type { RhythmBoard } from "../../rhythm-board";
+import type { ScoreController } from "client/controllers/score";
 
 @Component({
   tag: $nameof<RhythmHUD>(),
   ancestorWhitelist: [PlayerGui]
 })
-export class RhythmHUD extends BaseComponent<{}, PlayerGui["RhythmHUD"]> implements OnStart, LogStart {
+export class RhythmHUD extends BaseComponent<{}, PlayerGui["RhythmHUD"]> implements LogStart {
   private readonly finishPositions = this.instance.Board.Viewport.FinishPositions;
-  private board!: RhythmBoard;
 
-  public constructor(
-    private readonly components: Components
-  ) { super(); }
-
-  public async onStart(): Promise<void> {
-    this.board = await this.components.waitForComponent<RhythmBoard>(PlayerGui.WaitForChild("RhythmHUD").WaitForChild("Board").WaitForChild("Viewport").WaitForChild("RhythmBoard"));
+  public static enable(): void {
+    const [hud] = Dependency<Components>().getAllComponents<RhythmHUD>();
+    hud.instance.Enabled = true;
   }
 
-  public getBoard(): RhythmBoard {
-    return this.board;
+  public static disable(): void {
+    const [hud] = Dependency<Components>().getAllComponents<RhythmHUD>();
+    hud.instance.Enabled = false;
   }
 
-  public highlightFinishPosition(position: NotePosition): void {
+  public constructor(score: ScoreController) {
+    super();
+    score.noteAttempted.Connect(position => this.highlightFinishPosition(position));
+    score.noteCompleted.Connect(position => this.addNoteCompletionVFX(position));
+  }
+
+  private highlightFinishPosition(position: NotePosition): void {
     const finishPosition = this.getFinishPosition(position);
     const tweenInfo = new TweenInfoBuilder()
       .SetTime(0.085)
@@ -44,17 +47,9 @@ export class RhythmHUD extends BaseComponent<{}, PlayerGui["RhythmHUD"]> impleme
     });
   }
 
-  public addNoteCompletionVFX(position: NotePosition): void {
+  private addNoteCompletionVFX(position: NotePosition): void {
     // const finishPosition = this.getFinishPosition(position);
 
-  }
-
-  public enable(): void {
-    this.instance.Enabled = true;
-  }
-
-  public disable(): void {
-    this.instance.Enabled = false;
   }
 
   private getFinishPosition(position: NotePosition): Frame {

@@ -4,6 +4,7 @@ import { $nameof } from "rbxts-transform-debug";
 import type { LogStart } from "shared/hooks";
 import { PlayerGui } from "client/utility";
 
+import { RhythmHUD } from "../rhythm-hud";
 import { MenuButton } from "client/base-components/menu-button";
 import type { SongSelectController } from "client/controllers/song-select";
 import type { SongController } from "client/controllers/song";
@@ -16,8 +17,7 @@ import type { ScoreController } from "client/controllers/score";
 export class MenuStartButton extends MenuButton implements LogStart {
   public constructor(
     private readonly selected: SongSelectController,
-    private readonly song: SongController,
-    private readonly score: ScoreController
+    private readonly song: SongController
   ) { super(); }
 
   protected onClick(): void {
@@ -25,12 +25,12 @@ export class MenuStartButton extends MenuButton implements LogStart {
     if (this.selected.difficulty === undefined) return;
     if (this.selected.part === undefined) return;
 
-    this.score.rhythmHUD.enable();
+    RhythmHUD.enable();
     this.menu.disable();
     this.menu.setPage("Main");
     this.song.set(this.selected.song);
     this.song.setDifficulty(this.selected.difficulty);
-    this.song.assignPart(this.selected.part);
+    this.song.setPart(this.selected.part);
     this.song.start();
     this.selected.deselectAll();
   }

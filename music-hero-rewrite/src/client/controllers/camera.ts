@@ -11,6 +11,7 @@ import { AerialCamera } from "client/components/cameras/aerial";
 import { FixedCamera } from "client/components/cameras/fixed";
 import { FlyOnTheWallCamera } from "client/components/cameras/fly-on-the-wall";
 import { FirstPersonAnimatedCamera } from "client/components/cameras/first-person-animated";
+import { PerformerCamera } from "client/components/cameras/performer";
 import type { ControlPanelDropdownRenderer } from "shared/structs/control-panel";
 
 import { ControlPanelRenderable } from "./control-panel";
@@ -24,6 +25,7 @@ export interface Cameras {
   readonly Fixed: FixedCamera;
   readonly FlyOnTheWall: FlyOnTheWallCamera;
   readonly FirstPersonAnimated: FirstPersonAnimatedCamera;
+  readonly Performer: PerformerCamera;
 }
 
 @Controller()
@@ -36,14 +38,15 @@ export class CameraController implements OnInit, OnRender, LogStart, ControlPane
     Aerial: AerialCamera.create(this),
     Fixed: FixedCamera.create(this),
     FlyOnTheWall: FlyOnTheWallCamera.create(this),
-    FirstPersonAnimated: FirstPersonAnimatedCamera.create(this)
+    FirstPersonAnimated: FirstPersonAnimatedCamera.create(this),
+    Performer: PerformerCamera.create(this)
   }));
 
   public currentName!: keyof Cameras;
 
   public onInit(): void {
     this.cameraStorage.Name = "Cameras";
-    this.set("Default");
+    this.set("Performer");
   }
 
   public onRender(dt: number): void {

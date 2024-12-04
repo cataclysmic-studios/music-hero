@@ -1,6 +1,6 @@
 export interface SongInfo {
-  Instance: SongData;
-  Tempo: number;
+  readonly instance: SongData;
+  readonly tempo: number;
 }
 
 export enum SongDifficulty {

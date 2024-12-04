@@ -6,7 +6,7 @@ import { $nameof } from "rbxts-transform-debug";
 
 import { PlayerGui } from "client/utility";
 
-import type { BeatController } from "client/controllers/beat";
+import type { SongController } from "client/controllers/song";
 
 @Component({
   tag: $nameof<BeatVisualizer>(),
@@ -14,11 +14,11 @@ import type { BeatController } from "client/controllers/beat";
 })
 export class BeatVisualizer extends BaseComponent<{}, Frame & { UIStroke: UIStroke }> implements OnStart {
   public constructor(
-    private readonly beatController: BeatController
+    private readonly song: SongController
   ) { super(); }
 
   public onStart(): void {
-    this.beatController.onBeat.Connect(() => this.visualizeBeat());
+    this.song.onBeat.Connect(() => this.visualizeBeat());
   }
 
   private visualizeBeat(): void {

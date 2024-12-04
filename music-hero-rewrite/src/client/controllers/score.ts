@@ -1,14 +1,14 @@
-import { Controller, OnStart } from "@flamework/core";
+import { Controller, Dependency, OnStart } from "@flamework/core";
 import type { Components } from "@flamework/components";
 import { atom } from "@rbxts/charm";
 import Signal from "@rbxts/signal";
 
 import { Events } from "client/network";
-import { PlayerGui } from "client/utility";
 import { SongDifficulty } from "shared/structs/song-info";
 import { VALID_NOTE_RADIUS } from "shared/constants";
+import { getNotesInRadius } from "shared/game-utility";
 
-import type { RhythmHUD } from "client/components/ui/rhythm-hud";
+import { SongController } from "./song";
 
 const { round, floor, clamp, abs } = math;
 
@@ -21,27 +21,41 @@ type StarAmount = 0 | 1 | 2 | 3 | 4 | 5;
 @Controller()
 export class ScoreController implements OnStart {
   public readonly updated = new Signal;
+  public readonly noteAttempted = new Signal<(notePosition: NotePosition) => void>;
+  public readonly noteCompleted = new Signal<(notePosition: NotePosition) => void>;
   public readonly overdriveProgress = atom(0);
   public readonly current = atom(0);
   public readonly multiplier = atom(1);
   public readonly nextMultiplierProgress = atom(0);
   public readonly starsProgress = atom(0);
-  public rhythmHUD!: RhythmHUD;
   public goodNotes = 0;
   public perfectNotes = 0;
   public totalNotes = 0;
   public missedNotes = 0;
 
   private currentSong?: SongName;
+  private noteTrack?: Model;
   private inOverdrive = false;
 
-  public constructor(
-    private readonly components: Components
-  ) { }
+  public onStart(): void {
+    task.delay(3, () => this.updated.Fire());
+    Dependency<SongController>().noteTrackSet.Connect(noteTrack => this.noteTrack = noteTrack);
+  }
 
-  public async onStart(): Promise<void> {
-    this.rhythmHUD = await this.components.waitForComponent<RhythmHUD>(PlayerGui.WaitForChild("RhythmHUD"));
-    this.updated.Fire();
+  public async calculateScore(): Promise<void> {
+    if (this.currentSong === undefined) return;
+    Events.data.addSongScoreCard(this.currentSong, {
+      totalNotes: this.totalNotes,
+      accuracy: this.getAccuracy(),
+      goodNotes: this.goodNotes,
+      perfectNotes: this.perfectNotes,
+      missedNotes: this.missedNotes,
+      points: this.current(),
+      starsProgress: this.calculateStarsProgress(),
+      stars: this.calculateStars()
+    });
+
+    this.reset();
   }
 
   public setSong(songName: SongName): void {
@@ -53,31 +67,27 @@ export class ScoreController implements OnStart {
   }
 
   public attemptNote(notePosition: NotePosition, difficulty: SongDifficulty): void {
-    if (this.currentSong === undefined) return;
+    if (this.noteTrack === undefined) return;
     if (notePosition === 5 && difficulty !== SongDifficulty.Expert) return;
-    this.rhythmHUD.highlightFinishPosition(notePosition);
+    this.noteAttempted.Fire(notePosition);
 
-    const board = this.rhythmHUD.getBoard();
-    const [pressedNote] = board.getNotesInRadius(notePosition);
-    if (!pressedNote) return;
+    const [pressedNote] = getNotesInRadius(this.noteTrack, notePosition);
+    if (pressedNote === undefined) return;
     if (pressedNote.Transparency > 0) return;
     pressedNote.Transparency = 1;
-    print("pressed", notePosition)
 
     const zPosition = pressedNote.Position.Z;
     const noteParent = pressedNote.Parent;
     pressedNote.Destroy();
 
-    task.spawn(() => {
-      const isPerfect = abs(zPosition) <= PERFECT_NOTE_RADIUS;
-      const lastOfOverdriveGroup = noteParent!.Name === "OverdriveGroup" && noteParent!.GetChildren().size() === 1;
-      if (lastOfOverdriveGroup)
-        this.addOverdriveProgress(25);
+    const isPerfect = abs(zPosition) <= PERFECT_NOTE_RADIUS;
+    const lastOfOverdriveGroup = noteParent!.Name === "OverdriveGroup" && noteParent!.GetChildren().size() === 1;
+    if (lastOfOverdriveGroup)
+      this.addOverdriveProgress(25);
 
-      const accuracyRatio = 75; // if your note was 1 stud away, you'd have accuracyRatio% accuracy
-      this.addCompletedNote(isPerfect, math.clamp(abs(accuracyRatio / 100 / zPosition), 0.1, 1));
-      this.rhythmHUD.addNoteCompletionVFX(notePosition);
-    });
+    const accuracyRatio = 75; // if your note was 1 stud away, you'd have accuracyRatio% accuracy
+    this.addCompletedNote(isPerfect, clamp(abs(accuracyRatio / 100 / zPosition), 0.1, 1));
+    this.noteCompleted.Fire(notePosition);
   }
 
   public add(amount: number): void {
@@ -98,22 +108,6 @@ export class ScoreController implements OnStart {
     this.missedNotes++;
     this.resetMultiplier();
     this.updated.Fire();
-  }
-
-  public async saveResult(): Promise<void> {
-    if (this.currentSong === undefined) return;
-    Events.data.addSongScoreCard(this.currentSong, {
-      totalNotes: this.totalNotes,
-      accuracy: this.getAccuracy(),
-      goodNotes: this.goodNotes,
-      perfectNotes: this.perfectNotes,
-      missedNotes: this.missedNotes,
-      points: this.current(),
-      starsProgress: this.calculateStarsProgress(),
-      stars: this.calculateStars()
-    });
-
-    this.reset();
   }
 
   public activateOverdrive(): void {

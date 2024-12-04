@@ -3,15 +3,19 @@ import { SoundService as Sound } from "@rbxts/services";
 import { Janitor } from "@rbxts/janitor";
 import { atom } from "@rbxts/charm";
 
-import { Assets } from "shared/constants";
 import { SongDifficulty, type SongInfo } from "shared/structs/song-info";
+import { getBeatDuration, getSongInfo } from "shared/game-utility";
 import Log from "shared/log";
 
-import type { BeatController } from "./beat";
+import { Rhythm } from "./rhythm";
 import type { ScoreController } from "./score";
+import Signal from "@rbxts/signal";
 
 @Controller()
-export class SongController implements OnRender {
+export class SongController extends Rhythm implements OnRender {
+  public readonly updated = new Signal<(elapsed: number) => void>;
+  public readonly onSet = new Signal<(song: SongInfo) => void>;
+  public readonly noteTrackSet = new Signal<(noteTrack: Model) => void>;
   public readonly part = atom<keyof SongParts>("Lead");
   public difficulty = SongDifficulty.Expert;
 
@@ -19,52 +23,52 @@ export class SongController implements OnRender {
   private elapsed = 0;
 
   public constructor(
-    private readonly beatController: BeatController,
     private readonly score: ScoreController
-  ) { }
+  ) { super(); }
 
   public onRender(dt: number): void {
-    if (!this.beatController.active) return;
-    if (this.score.rhythmHUD === undefined) return;
+    if (!this.active) return;
 
-    this.score.rhythmHUD.getBoard().update(this.elapsed);
+    this.update(dt);
+    this.updated.Fire(this.elapsed);
     this.elapsed += dt;
   }
 
   public async start(): Promise<void> {
+    if (this.currentSong === undefined)
+      return Log.warn(`Failed to start song: No song is currently selected`);
+
+    Log.info(`Started song "${this.currentSong.instance.Name}"`);
     await this.playIntroMetronome();
-    this.beatController.start(() => this.cleanup());
+    super.start(this.currentSong.instance.Audio, () => this.cleanup());
   }
 
   public set(songName: SongName): void {
-    const rhythmBoard = this.score.rhythmHUD.getBoard();
+    this.currentSong = getSongInfo(songName);
     this.score.setSong(songName);
-    this.beatController.currentSong = this.getSongInfo(songName);
-    rhythmBoard.beatDuration = this.beatController.getBeatDuration();
+    this.onSet.Fire(this.currentSong);
   }
 
   public setDifficulty(difficulty: SongDifficulty): void {
     this.difficulty = difficulty;
-    this.assignPart(this.part());
+    this.setPart(this.part());
   }
 
-  public assignPart(partName: keyof SongParts): void {
+  /**
+   * **Note**: `SongController.set()` must be called before this function will work
+   */
+  public setPart(partName: keyof SongParts): void {
     const difficultyName = this.getDifficultyName();
-    const songParts = this.beatController.currentSong!.Instance.Parts;
+    const songParts = this.currentSong!.instance.Parts;
     const noteTrack = this.songJanitor.Add(songParts[difficultyName][partName].Clone());
-    const rhythmBoard = this.score.rhythmHUD.getBoard();
 
-    rhythmBoard.setNoteTrack(noteTrack);
+    this.noteTrackSet.Fire(noteTrack);
     this.score.setTotalNotes(noteTrack.GetChildren().size());
     this.part(partName);
   }
 
-  public getCurrentNoteTrack(): Maybe<Model> {
-    return this.score.rhythmHUD?.getBoard().noteTrack;
-  }
-
   private async playIntroMetronome(): Promise<void> {
-    const beatDuration = this.beatController.getBeatDuration();
+    const beatDuration = getBeatDuration(this.currentSong!.tempo);
     Sound.Tick.Play(); // one!
     task.wait(beatDuration * 2);
     Sound.Tick.Play(); // two!
@@ -80,21 +84,11 @@ export class SongController implements OnRender {
     task.wait(beatDuration);
   }
 
-  private getSongInfo(songName: SongName): SongInfo {
-    const song = Assets.Songs[songName];
-    const tempo = song.GetAttribute<number>("Tempo")!;
-
-    return {
-      Instance: song,
-      Tempo: tempo
-    };
-  }
-
   private cleanup(): void {
     Log.info("Cleaned up song");
     this.songJanitor.Cleanup();
-    this.beatController.stop();
     this.elapsed = 0;
+    this.stop();
   }
 
   private getDifficultyName(): keyof typeof SongDifficulty {
