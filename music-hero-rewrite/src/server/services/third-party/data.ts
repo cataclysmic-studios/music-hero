@@ -83,8 +83,8 @@ export class DataService implements OnInit, OnPlayerJoin, OnPlayerLeave, LogStar
 		this.updatedGlobal.Fire((await this.getGlobal(""))!);
 	}
 
-	public get(player: Player, initialValue = INITIAL_DATA): PlayerData {
-		return this.playerData[player.UserId] ?? initialValue;
+	public get<T extends PlayerData = PlayerData>(player: Player, initialValue = INITIAL_DATA): T {
+		return <T>this.playerData[player.UserId] ?? initialValue;
 	}
 
 	public set(player: Player, data: PlayerData): PlayerData {

@@ -1,5 +1,7 @@
 import type { DataType } from "@rbxts/flamework-binary-serializer";
 
+import type { SongStats } from "./song-stats";
+
 export const INITIAL_GLOBAL_DATA: GlobalData = {
 
 };
@@ -22,6 +24,6 @@ export interface PlayerData {
   readonly stars: DataType.u32;
   readonly diamonds: DataType.u32;
   readonly keybinds: [Enum.KeyCode["Value"], Enum.KeyCode["Value"], Enum.KeyCode["Value"], Enum.KeyCode["Value"], Enum.KeyCode["Value"]];
-  readonly songScores: {};
+  readonly songScores: Partial<Record<SongName, SongStats[]>>;
   readonly purchaseHistory: string[];
 }

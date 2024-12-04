@@ -116,36 +116,36 @@ export class MouseController implements OnInit, OnRender {
 
   @OnInputRelease("mmb")
   private mmbUp(): void {
-    return this.isMmbDown(false);
+    this.isMmbDown(false);
   }
 
   @OnInput("MouseButton3", "mmb")
   private mmbDown(): void {
-    return this.isMmbDown(true);
+    this.isMmbDown(true);
   }
 
   @OnInputRelease("rmb")
   private rmbUp(): void {
-    return this.isRmbDown(false);
+    this.isRmbDown(false);
   }
 
   @OnInput("MouseButton2", "rmb")
   private rmbDown(): void {
-    return this.isRmbDown(true);
+    this.isRmbDown(true);
   }
 
   @OnInputRelease("lmb")
   private lmbUp(): void {
-    return this.isLmbDown(false);
+    this.isLmbDown(false);
   }
 
   @OnInput("MouseButton1", "lmb")
   private lmbDown(): void {
-    return this.isLmbDown(true);
+    this.isLmbDown(true);
   }
 
   private triggerAxesChange(axis: Axis<"ButtonL2" | "ButtonR2">, isDown: Charm.Atom<boolean>): void {
-    if (axis.Delta.Z < 0) return isDown(false);
+    if (axis.Delta.Z < 0) return void isDown(false);
     if (axis.Delta.Z < 0.05) return;
     isDown(true);
   }
