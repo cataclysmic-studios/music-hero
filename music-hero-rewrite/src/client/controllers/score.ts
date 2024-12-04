@@ -21,6 +21,10 @@ type StarAmount = 0 | 1 | 2 | 3 | 4 | 5;
 @Controller()
 export class ScoreController implements OnStart {
   public readonly updated = new Signal;
+  public readonly overdriveProgress = atom(0);
+  public readonly current = atom(0);
+  public readonly multiplier = atom(1);
+  public readonly nextMultiplierProgress = atom(0);
   public goodNotes = 0;
   public perfectNotes = 0;
   public totalNotes = 0;
@@ -29,10 +33,6 @@ export class ScoreController implements OnStart {
   private rhythmHUD!: RhythmHUD;
   private currentSong?: SongName;
   private inOverdrive = false;
-  private overdriveProgress = atom(0);
-  private current = atom(0);
-  private multiplier = atom(1);
-  private nextMultiplierProgress = atom(0);
 
   public constructor(
     private readonly components: Components

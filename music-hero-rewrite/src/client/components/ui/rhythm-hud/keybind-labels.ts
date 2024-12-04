@@ -1,5 +1,6 @@
 import { Component, BaseComponent } from "@flamework/components";
 import { getChildrenOfType } from "@rbxts/instance-utility";
+import { $nameof } from "rbxts-transform-debug";
 
 import type { OnDataUpdate } from "client/hooks";
 import { PlayerGui } from "client/utility";
@@ -10,7 +11,7 @@ type KeycodeFactory = (typeof Enum.KeyCode) & {
 }
 
 @Component({
-  tag: "KeybindLabels",
+  tag: $nameof<KeybindLabels>(),
   ancestorWhitelist: [PlayerGui]
 })
 export class KeybindLabels extends BaseComponent<{}, Frame & { Unlisted: Folder & {} }> implements OnDataUpdate {
