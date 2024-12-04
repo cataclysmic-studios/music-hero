@@ -1,6 +1,6 @@
 interface PlayerGui extends BasePlayerGui {
   Menu: ScreenGui & {
-    Pages: Frame;
+    Pages: ImageLabel;
   };
   RhythmHUD: ScreenGui & {
     Board: Frame & {

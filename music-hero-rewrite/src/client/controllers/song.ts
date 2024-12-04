@@ -24,10 +24,10 @@ export class SongController implements OnRender {
   ) { }
 
   public onRender(dt: number): void {
-    const rhythmBoard = this.score.rhythmHUD.getBoard();
-    if (!this.beatController.active || rhythmBoard === undefined) return;
+    if (!this.beatController.active) return;
+    if (this.score.rhythmHUD === undefined) return;
 
-    rhythmBoard.update(this.elapsed);
+    this.score.rhythmHUD.getBoard().update(this.elapsed);
     this.elapsed += dt;
   }
 

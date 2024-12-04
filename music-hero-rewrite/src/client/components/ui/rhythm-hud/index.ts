@@ -4,6 +4,7 @@ import { TweenInfoBuilder } from "@rbxts/builders";
 import { getChildrenOfType, tween } from "@rbxts/instance-utility";
 import { $nameof } from "rbxts-transform-debug";
 
+import type { LogStart } from "shared/hooks";
 import { PlayerGui } from "client/utility";
 
 import type { RhythmBoard } from "../../rhythm-board";
@@ -12,7 +13,7 @@ import type { RhythmBoard } from "../../rhythm-board";
   tag: $nameof<RhythmHUD>(),
   ancestorWhitelist: [PlayerGui]
 })
-export class RhythmHUD extends BaseComponent<{}, PlayerGui["RhythmHUD"]> implements OnStart {
+export class RhythmHUD extends BaseComponent<{}, PlayerGui["RhythmHUD"]> implements OnStart, LogStart {
   private readonly finishPositions = this.instance.Board.Viewport.FinishPositions;
   private board!: RhythmBoard;
 

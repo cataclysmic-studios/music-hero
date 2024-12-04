@@ -20,7 +20,7 @@ class FlameworkLogger extends Logger {
    * @param component The component itself
    */
   public async clientComponent(component: BaseComponent): Promise<void> {
-    this.info(`Started ${getName(component)} on ${await getInstancePath(component.instance)}`, ["client_component"]);
+    this.info(`Started ${getName(component)} on ${await getInstancePath(component.instance)}`, ["client component"]);
   }
 
   /**
@@ -28,7 +28,7 @@ class FlameworkLogger extends Logger {
    * @param component The component itself
    */
   public async serverComponent(component: BaseComponent): Promise<void> {
-    this.info(`Started ${getName(component)} on ${await getInstancePath(component.instance)}`, ["server_component"]);
+    this.info(`Started ${getName(component)} on ${await getInstancePath(component.instance)}`, ["server component"]);
   }
 
   /**

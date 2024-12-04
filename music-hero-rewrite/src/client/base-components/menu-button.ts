@@ -1,5 +1,5 @@
 import { Dependency, type OnStart } from "@flamework/core";
-import { BaseComponent, type Components } from "@flamework/components";
+import { BaseComponent, Component, type Components } from "@flamework/components";
 import { TweenInfoBuilder } from "@rbxts/builders";
 import { tween } from "@rbxts/instance-utility";
 
@@ -7,6 +7,7 @@ import { PlayerGui } from "client/utility";
 
 import type { Menu } from "client/components/ui/menu";
 
+@Component()
 export abstract class MenuButton extends BaseComponent<{}, GuiButton & { Border: UIStroke }> implements OnStart {
   protected menu!: Menu;
 
