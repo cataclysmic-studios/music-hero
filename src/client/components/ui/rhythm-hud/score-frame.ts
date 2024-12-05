@@ -1,4 +1,3 @@
-import type { OnStart } from "@flamework/core";
 import { Component, BaseComponent } from "@flamework/components";
 import { commaFormat } from "@rbxts/formatting";
 import { subscribe } from "@rbxts/charm";
@@ -9,23 +8,24 @@ import { PlayerGui } from "client/utility";
 import type { ScoreController } from "client/controllers/score";
 import type { SongController } from "client/controllers/song";
 
+interface ScoreFrameInstance extends Frame {
+  Title: TextLabel;
+  Value: TextLabel;
+}
+
 @Component({
   tag: $nameof<ScoreFrame>(),
   ancestorWhitelist: [PlayerGui]
 })
-export class ScoreFrame extends BaseComponent<{}, Frame & { Title: TextLabel; Value: TextLabel }> implements OnStart {
-  public constructor(
-    private readonly score: ScoreController,
-    private readonly song: SongController
-  ) { super(); }
-
-  public onStart(): void {
-    this.update(this.score.card().score);
-    this.updatePart(this.song.current()?.partName ?? "Lead");
-    subscribe(this.score.card, scoreCard => this.update(scoreCard.score));
-    subscribe(this.song.current, song => {
-      if (song === undefined) return;
-      this.updatePart(song.partName);
+export class ScoreFrame extends BaseComponent<{}, ScoreFrameInstance> {
+  public constructor(score: ScoreController, song: SongController) {
+    super();
+    this.update(score.card().score);
+    this.updatePart(song.current()?.partName ?? "Lead");
+    subscribe(score.card, scoreCard => this.update(scoreCard.score));
+    subscribe(song.current, currentSong => {
+      if (currentSong === undefined) return;
+      this.updatePart(currentSong.partName);
     });
   }
 

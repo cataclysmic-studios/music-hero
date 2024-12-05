@@ -8,6 +8,7 @@ import { PlayerGui } from "client/utility";
 import { calculateStarsProgress } from "shared/game-utility";
 
 import type { ScoreController } from "client/controllers/score";
+import { SongController } from "client/controllers/song";
 
 const { floor, clamp } = math;
 
@@ -21,20 +22,21 @@ interface Star extends ImageLabel {
   tag: $nameof<StarsFrame>(),
   ancestorWhitelist: [PlayerGui]
 })
-export class StarsFrame extends BaseComponent<{}, Frame> implements OnStart {
+export class StarsFrame extends BaseComponent<{}, Frame> {
   private readonly stars = getChildrenOfType<"ImageLabel", Star>(this.instance, "ImageLabel");
 
-  public constructor(
-    private readonly score: ScoreController
-  ) { super(); }
-
-  public onStart(): void {
-    const starsProgress = calculateStarsProgress(this.score.card());
+  public constructor(score: ScoreController, song: SongController) {
+    super();
+    const starsProgress = calculateStarsProgress(score.card());
     this.updateStarsProgress(starsProgress)
-    subscribe(this.score.card, scoreCard => this.updateStarsProgress(calculateStarsProgress(scoreCard)));
+    subscribe(score.card, scoreCard => this.updateStarsProgress(calculateStarsProgress(scoreCard)));
+    subscribe(song.current, currentSong => {
+      if (currentSong !== undefined) return;
+      this.reset();
+    });
   }
 
-  public reset(): void {
+  private reset(): void {
     this.updateStarsProgress(0);
   }
 

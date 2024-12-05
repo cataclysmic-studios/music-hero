@@ -1,4 +1,3 @@
-import type { OnStart } from "@flamework/core";
 import { Component, BaseComponent } from "@flamework/components";
 import { TweenInfoBuilder } from "@rbxts/builders";
 import { tween } from "@rbxts/instance-utility";
@@ -9,25 +8,32 @@ import { PlayerGui } from "client/utility";
 
 import type { ScoreController } from "client/controllers/score";
 
+const TWEEN_INFO = new TweenInfoBuilder()
+  .SetTime(0.06)
+  .SetEasingStyle(Enum.EasingStyle.Sine)
+  .SetEasingDirection(Enum.EasingDirection.In)
+  .Build();
+
+interface MultiplierFrameInstance extends Frame {
+  Label: TextLabel & {
+    Border: UIStroke;
+  };
+}
+
 @Component({
   tag: $nameof<MultiplierFrame>(),
   ancestorWhitelist: [PlayerGui]
 })
-export class MultiplierFrame extends BaseComponent<{}, Frame & { Label: TextLabel & { Border: UIStroke } }> implements OnStart {
-  private currentProgress = 0;
-
-  public constructor(
-    private readonly score: ScoreController
-  ) { super(); }
-
-  public onStart(): void {
-    this.updateProgressBar(this.score.nextMultiplierProgress() / 1000);
+export class MultiplierFrame extends BaseComponent<{}, MultiplierFrameInstance> {
+  public constructor(score: ScoreController) {
+    super();
+    this.updateProgressBar(score.nextMultiplierProgress() / 1000);
     this.instance.GetPropertyChangedSignal("AbsoluteSize")
-      .Connect(() => this.updateProgressBar(this.score.nextMultiplierProgress() / 1000));
+      .Connect(() => this.updateProgressBar(score.nextMultiplierProgress() / 1000));
 
-    this.update(this.score.multiplier());
-    subscribe(this.score.multiplier, multiplier => this.update(multiplier));
-    subscribe(this.score.nextMultiplierProgress, progress => this.updateProgressBar(progress / 100));
+    this.update(score.multiplier());
+    subscribe(score.multiplier, multiplier => this.update(multiplier));
+    subscribe(score.nextMultiplierProgress, progress => this.updateProgressBar(progress / 100));
   }
 
   private update(multiplier: number): void {
@@ -36,13 +42,7 @@ export class MultiplierFrame extends BaseComponent<{}, Frame & { Label: TextLabe
 
   private updateProgressBar(progress: number): void {
     const borderThickness = this.calculateBorderThickness() * progress;
-    const tweenInfo = new TweenInfoBuilder()
-      .SetTime(0.06)
-      .SetEasingStyle(Enum.EasingStyle.Sine)
-      .SetEasingDirection(Enum.EasingDirection.In)
-      .Build();
-
-    tween(this.instance.Label.Border, tweenInfo, { Thickness: borderThickness });
+    tween(this.instance.Label.Border, TWEEN_INFO, { Thickness: borderThickness });
   }
 
   private calculateBorderThickness(): number {

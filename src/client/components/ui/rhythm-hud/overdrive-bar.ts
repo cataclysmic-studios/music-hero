@@ -1,4 +1,3 @@
-import { OnStart } from "@flamework/core";
 import { Component, BaseComponent } from "@flamework/components";
 import { TweenInfoBuilder } from "@rbxts/builders";
 import { tween } from "@rbxts/instance-utility";
@@ -9,24 +8,25 @@ import { PlayerGui } from "client/utility";
 
 import type { ScoreController } from "client/controllers/score";
 
+interface OverdriveBarFrame extends Frame {
+  Progress: Frame;
+}
+
 @Component({
   tag: $nameof<OverdriveBar>(),
   ancestorWhitelist: [PlayerGui]
 })
-export class OverdriveBar extends BaseComponent<{}, Frame & { Progress: Frame }> implements OnStart {
+export class OverdriveBar extends BaseComponent<{}, OverdriveBarFrame> {
   private readonly tweenInfo = new TweenInfoBuilder()
     .SetTime(0.1)
     .Build();
 
-  public constructor(
-    private readonly score: ScoreController
-  ) { super(); }
-
-  public onStart(): void {
+  public constructor(score: ScoreController) {
+    super();
     this.instance.Progress.Size = UDim2.fromScale(0, 1);
 
-    this.update(this.score.overdriveProgress());
-    subscribe(this.score.overdriveProgress, progress => this.update(progress));
+    this.update(score.overdriveProgress());
+    subscribe(score.overdriveProgress, progress => this.update(progress));
   }
 
   private update(progress: number): void {
