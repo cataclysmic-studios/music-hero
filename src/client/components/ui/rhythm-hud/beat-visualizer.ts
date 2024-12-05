@@ -2,11 +2,11 @@ import { Component, BaseComponent } from "@flamework/components";
 import { TweenInfoBuilder } from "@rbxts/builders";
 import { tween } from "@rbxts/instance-utility";
 import { $nameof } from "rbxts-transform-debug";
+import { subscribe } from "@rbxts/charm";
 
 import { PlayerGui } from "client/utility";
 
 import type { SongController } from "client/controllers/song";
-import { subscribe } from "@rbxts/charm";
 
 @Component({
   tag: $nameof<BeatVisualizer>(),
@@ -30,7 +30,7 @@ export class BeatVisualizer extends BaseComponent<{}, Frame & { UIStroke: UIStro
       this.instance.UIStroke,
       new TweenInfoBuilder()
         .SetTime(0.015)
-        .SetEasingStyle(Enum.EasingStyle.Sine)
+        .SetEasingStyle(Enum.EasingStyle.Linear)
         .SetEasingDirection(Enum.EasingDirection.Out)
         .SetReverses(true)
         .Build(),

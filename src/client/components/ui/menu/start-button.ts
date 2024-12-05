@@ -31,7 +31,7 @@ export class MenuStartButton extends MenuButton implements LogStart {
       this.menu.setPage("Main");
       this.song.start(song);
     } catch (e) {
-      if (startsWith(tostring(e), "Failed to build song")) return;
+      if (startsWith(tostring(e), "[FATAL] Failed to build song")) return;
       Log.fatal(tostring(e));
     }
   }

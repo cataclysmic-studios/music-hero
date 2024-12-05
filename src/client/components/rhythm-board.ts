@@ -3,16 +3,16 @@ import { getDescendantsOfType } from "@rbxts/instance-utility";
 import { subscribe } from "@rbxts/charm";
 import { $nameof } from "rbxts-transform-debug";
 
+import { SpawnTask } from "shared/decorators";
 import { PlayerGui } from "client/utility";
 import { Song } from "client/classes/song";
 import { VALID_NOTE_RADIUS } from "shared/constants";
 
 import type { ScoreController } from "client/controllers/score";
 import type { SongController } from "client/controllers/song";
-import { SpawnTask } from "shared/decorators";
 
 const BEAT_STUD_LENGTH = 12;
-const NOTE_COMPLETION_POSITION = VALID_NOTE_RADIUS / 1.5;
+const NOTE_COMPLETION_POSITION = VALID_NOTE_RADIUS / 2;
 const NORMAL_NOTE_COLOR = Color3.fromRGB(102, 125, 188);
 
 @Component({
@@ -23,16 +23,15 @@ export class RhythmBoard extends BaseComponent<{}, Part & { Grid: Texture }> {
   private readonly viewport = <ViewportFrame>this.instance.Parent;
   private defaultNoteTrackPivot?: CFrame;
   private currentSong?: Song;
-  private beatDuration = 0;
 
   public constructor(
     private readonly score: ScoreController,
     song: SongController
   ) {
     super();
-    song.updated.Connect(elapsed => this.update(elapsed));
+    song.updated.Connect(() => this.update());
     subscribe(song.current, song => {
-      this.currentSong = song
+      this.currentSong = song;
       if (song === undefined) return;
       this.initializeNoteTrack(song.noteTrack);
     });
@@ -46,13 +45,14 @@ export class RhythmBoard extends BaseComponent<{}, Part & { Grid: Texture }> {
     this.defaultNoteTrackPivot = noteTrack.GetPivot();
   }
 
-  private update(elapsed: number): void {
+  private update(): void {
     if (this.currentSong === undefined) return;
     if (this.defaultNoteTrackPivot === undefined) return;
 
-    const lerpPosition = (elapsed / this.beatDuration) * BEAT_STUD_LENGTH;
+    const timePosition = this.currentSong.getTimePosition();
+    const lerpPosition = (timePosition / this.currentSong.beatDuration) * BEAT_STUD_LENGTH;
     this.instance.Grid.OffsetStudsV = lerpPosition;
-    this.currentSong.noteTrack.PivotTo(this.defaultNoteTrackPivot.add(new Vector3(0, 0, lerpPosition)));
+    this.currentSong.noteTrack.PivotTo(this.defaultNoteTrackPivot.add(new Vector3(0, 0, lerpPosition - 0.25)));
     this.checkForCompletedNotes();
   }
 

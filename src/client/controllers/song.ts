@@ -8,14 +8,14 @@ import Log from "shared/log";
 
 @Controller()
 export class SongController implements OnRender {
-  public readonly updated = new Signal<(elapsed: number) => void>;
+  public readonly updated = new Signal<() => void>;
   public readonly current = atom<Maybe<Song>>(undefined);
 
   public onRender(dt: number): void {
     const song = this.current();
     if (song === undefined) return;
     song.update(dt);
-    this.updated.Fire(song.timePosition);
+    this.updated.Fire();
   }
 
   public async start(song: Song): Promise<void> {

@@ -1,9 +1,19 @@
 import Destroyable from "@rbxts/destroyable";
 
-import { getSongInfo } from "shared/game-utility";
+import { Assets } from "shared/constants";
 import { Song } from "./song";
-import type { SongDifficulty } from "shared/structs/song-info";
+import type { SongDifficulty, SongInfo } from "shared/structs/song-info";
 import Log from "shared/log";
+
+function getSongInfo(songName: SongName): SongInfo {
+  const song = Assets.Songs.WaitForChild(songName);
+
+  return {
+    instance: song,
+    name: songName,
+    tempo: song.GetAttribute<number>("Tempo")!
+  };
+}
 
 export class SongBuilder extends Destroyable {
   private name?: SongName;
