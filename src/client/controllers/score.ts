@@ -1,12 +1,12 @@
 import { Controller, Dependency, OnStart } from "@flamework/core";
-import type { Components } from "@flamework/components";
-import { atom } from "@rbxts/charm";
+import { atom, subscribe } from "@rbxts/charm";
 import Signal from "@rbxts/signal";
 
 import { Events } from "client/network";
 import { SongDifficulty } from "shared/structs/song-info";
 import { VALID_NOTE_RADIUS } from "shared/constants";
 import { getNotesInRadius } from "shared/game-utility";
+import type { Song } from "client/classes/song";
 
 import { SongController } from "./song";
 
@@ -33,18 +33,18 @@ export class ScoreController implements OnStart {
   public totalNotes = 0;
   public missedNotes = 0;
 
-  private currentSong?: SongName;
-  private noteTrack?: Model;
+  private currentSong?: Song;
   private inOverdrive = false;
 
   public onStart(): void {
     task.delay(3, () => this.updated.Fire());
-    Dependency<SongController>().noteTrackSet.Connect(noteTrack => this.noteTrack = noteTrack);
+    const song = Dependency<SongController>();
+    subscribe(song.current, song => this.currentSong = song)
   }
 
   public async calculateScore(): Promise<void> {
     if (this.currentSong === undefined) return;
-    Events.data.addSongScoreCard(this.currentSong, {
+    Events.data.addSongScoreCard(this.currentSong.info.name, {
       totalNotes: this.totalNotes,
       accuracy: this.getAccuracy(),
       goodNotes: this.goodNotes,
@@ -58,20 +58,12 @@ export class ScoreController implements OnStart {
     this.reset();
   }
 
-  public setSong(songName: SongName): void {
-    this.currentSong = songName;
-  }
-
-  public setTotalNotes(totalNotes: number): void {
-    this.totalNotes = totalNotes;
-  }
-
   public attemptNote(notePosition: NotePosition, difficulty: SongDifficulty): void {
-    if (this.noteTrack === undefined) return;
+    if (this.currentSong === undefined) return;
     if (notePosition === 5 && difficulty !== SongDifficulty.Expert) return;
     this.noteAttempted.Fire(notePosition);
 
-    const [pressedNote] = getNotesInRadius(this.noteTrack, notePosition);
+    const [pressedNote] = getNotesInRadius(this.currentSong.noteTrack, notePosition);
     if (pressedNote === undefined) return;
     if (pressedNote.Transparency > 0) return;
     pressedNote.Transparency = 1;

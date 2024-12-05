@@ -12,6 +12,7 @@ export function getSongInfo(songName: SongName): SongInfo {
 
   return {
     instance: song,
+    name: <SongName>song.Name,
     tempo: song.GetAttribute<number>("Tempo")!
   };
 }

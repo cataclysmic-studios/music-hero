@@ -9,6 +9,8 @@ import { MenuButton } from "client/base-components/menu-button";
 import type { SongSelectController } from "client/controllers/song-select";
 import type { SongController } from "client/controllers/song";
 import type { ScoreController } from "client/controllers/score";
+import { Song } from "client/classes/song";
+import { getSongInfo } from "shared/game-utility";
 
 @Component({
   tag: $nameof<MenuStartButton>(),
@@ -28,10 +30,9 @@ export class MenuStartButton extends MenuButton implements LogStart {
     RhythmHUD.enable();
     this.menu.disable();
     this.menu.setPage("Main");
-    this.song.set(this.selected.song);
-    this.song.setDifficulty(this.selected.difficulty);
-    this.song.setPart(this.selected.part);
-    this.song.start();
+    const songInfo = getSongInfo(this.selected.song);
+    const song = new Song(songInfo, this.selected.difficulty, this.selected.part);
+    this.song.start(song);
     this.selected.deselectAll();
   }
 }

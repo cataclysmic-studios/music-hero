@@ -20,13 +20,17 @@ export class ScoreFrame extends BaseComponent<{}, Frame & { Title: TextLabel; Va
   ) { super(); }
 
   public onStart(): void {
-    this.update(this.score.current())
-    this.updatePart(this.song.part());
+    const currentSong = this.song.current();
+    this.update(this.score.current());
+    this.updatePart(currentSong?.partName ?? "Lead");
     subscribe(this.score.current, score => this.update(score));
-    subscribe(this.song.part, part => this.updatePart(part));
+    subscribe(this.song.current, song => {
+      if (song === undefined) return;
+      this.updatePart(song.partName);
+    });
   }
 
-  private updatePart(part: string): void {
+  private updatePart(part: keyof SongParts): void {
     this.instance.Title.Text = `${part.upper()} SCORE`;
     this.instance.Value.Text = "0";
   }

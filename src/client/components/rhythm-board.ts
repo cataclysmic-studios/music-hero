@@ -1,16 +1,17 @@
 import { Component, BaseComponent } from "@flamework/components";
 import { getDescendantsOfType } from "@rbxts/instance-utility";
+import { subscribe } from "@rbxts/charm";
 import { $nameof } from "rbxts-transform-debug";
 
 import { PlayerGui } from "client/utility";
+import { Song } from "client/classes/song";
 import { VALID_NOTE_RADIUS } from "shared/constants";
 
 import type { ScoreController } from "client/controllers/score";
-import { SongController } from "client/controllers/song";
-import { getBeatDuration } from "shared/game-utility";
+import type { SongController } from "client/controllers/song";
 
 const BEAT_STUD_LENGTH = 12;
-const NOTE_COMPLETION_POSITION = 0 + (VALID_NOTE_RADIUS / 1.5);
+const NOTE_COMPLETION_POSITION = VALID_NOTE_RADIUS / 1.5;
 const OVERDRIVE_NOTE_COLOR = Color3.fromRGB(218, 133, 65);
 const NORMAL_NOTE_COLOR = Color3.fromRGB(102, 125, 188);
 
@@ -21,7 +22,7 @@ const NORMAL_NOTE_COLOR = Color3.fromRGB(102, 125, 188);
 export class RhythmBoard extends BaseComponent<{}, Part & { Grid: Texture }> {
   private readonly viewport = <ViewportFrame>this.instance.Parent;
   private defaultNoteTrackPivot?: CFrame;
-  private noteTrack?: Model;
+  private currentSong?: Song;
   private beatDuration = 0;
 
   public constructor(
@@ -30,28 +31,30 @@ export class RhythmBoard extends BaseComponent<{}, Part & { Grid: Texture }> {
   ) {
     super();
     song.updated.Connect(elapsed => this.update(elapsed));
-    song.onSet.Connect(song => this.beatDuration = getBeatDuration(song.tempo));
-    song.noteTrackSet.Connect(noteTrack => this.setNoteTrack(noteTrack));
+    subscribe(song.current, song => {
+      this.currentSong = song
+      if (song === undefined) return;
+      this.initializeNoteTrack(song.noteTrack);
+    });
   }
 
-  private setNoteTrack(noteTrack: Model): void {
+  private initializeNoteTrack(noteTrack: Model): void {
     this.viewport.FindFirstChild("Notes")?.Destroy();
     noteTrack.Name = "Notes";
     noteTrack.Parent = this.viewport;
 
     this.defaultNoteTrackPivot = noteTrack.GetPivot();
-    this.noteTrack = noteTrack;
   }
 
   private update(elapsed: number): void {
-    if (this.noteTrack === undefined) return;
+    if (this.currentSong === undefined) return;
     if (this.defaultNoteTrackPivot === undefined) return;
 
     const lerpPosition = (elapsed / this.beatDuration) * BEAT_STUD_LENGTH;
     this.instance.Grid.OffsetStudsV = lerpPosition;
-    this.noteTrack.PivotTo(this.defaultNoteTrackPivot.add(new Vector3(0, 0, lerpPosition)));
+    this.currentSong.noteTrack.PivotTo(this.defaultNoteTrackPivot.add(new Vector3(0, 0, lerpPosition)));
 
-    const allNotes = getDescendantsOfType(this.noteTrack, "MeshPart");
+    const allNotes = getDescendantsOfType(this.currentSong.noteTrack, "MeshPart");
     for (const note of allNotes)
       task.spawn(() => {
         if (note.Position.Z >= NOTE_COMPLETION_POSITION) {

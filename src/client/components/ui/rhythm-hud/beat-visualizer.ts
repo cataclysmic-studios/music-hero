@@ -1,4 +1,3 @@
-import type { OnStart } from "@flamework/core";
 import { Component, BaseComponent } from "@flamework/components";
 import { TweenInfoBuilder } from "@rbxts/builders";
 import { tween } from "@rbxts/instance-utility";
@@ -7,18 +6,23 @@ import { $nameof } from "rbxts-transform-debug";
 import { PlayerGui } from "client/utility";
 
 import type { SongController } from "client/controllers/song";
+import { subscribe } from "@rbxts/charm";
 
 @Component({
   tag: $nameof<BeatVisualizer>(),
   ancestorWhitelist: [PlayerGui]
 })
-export class BeatVisualizer extends BaseComponent<{}, Frame & { UIStroke: UIStroke }> implements OnStart {
-  public constructor(
-    private readonly song: SongController
-  ) { super(); }
+export class BeatVisualizer extends BaseComponent<{}, Frame & { UIStroke: UIStroke }> {
+  private conn?: RBXScriptConnection
 
-  public onStart(): void {
-    this.song.onBeat.Connect(() => this.visualizeBeat());
+  public constructor(song: SongController) {
+    super();
+    subscribe(song.current, song => {
+      if (song === undefined)
+        return this.conn?.Disconnect();
+
+      this.conn = song.onBeat.Connect(() => this.visualizeBeat());
+    });
   }
 
   private visualizeBeat(): void {

@@ -22,8 +22,11 @@ export class InputController implements LogStart {
       const { keybinds } = replica.data;
       if (!keybinds.includes(input.KeyCode.Value)) return;
 
+      const currentSong = song.current();
+      if (currentSong === undefined) return;
+
       const position = <NotePosition>(keybinds.indexOf(input.KeyCode.Value)! + 1);
-      this.score.attemptNote(position, song.difficulty);
+      this.score.attemptNote(position, currentSong.difficulty);
     });
   }
 
