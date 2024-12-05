@@ -9,10 +9,10 @@ import { VALID_NOTE_RADIUS } from "shared/constants";
 
 import type { ScoreController } from "client/controllers/score";
 import type { SongController } from "client/controllers/song";
+import { SpawnTask } from "shared/decorators";
 
 const BEAT_STUD_LENGTH = 12;
 const NOTE_COMPLETION_POSITION = VALID_NOTE_RADIUS / 1.5;
-const OVERDRIVE_NOTE_COLOR = Color3.fromRGB(218, 133, 65);
 const NORMAL_NOTE_COLOR = Color3.fromRGB(102, 125, 188);
 
 @Component({
@@ -53,26 +53,33 @@ export class RhythmBoard extends BaseComponent<{}, Part & { Grid: Texture }> {
     const lerpPosition = (elapsed / this.beatDuration) * BEAT_STUD_LENGTH;
     this.instance.Grid.OffsetStudsV = lerpPosition;
     this.currentSong.noteTrack.PivotTo(this.defaultNoteTrackPivot.add(new Vector3(0, 0, lerpPosition)));
+    this.checkForCompletedNotes();
+  }
+
+  private checkForCompletedNotes(): void {
+    if (this.currentSong === undefined) return;
 
     const allNotes = getDescendantsOfType(this.currentSong.noteTrack, "MeshPart");
     for (const note of allNotes)
       task.spawn(() => {
-        if (note.Position.Z >= NOTE_COMPLETION_POSITION) {
-          const noteParent = note.Parent!;
-          const noteColor = OVERDRIVE_NOTE_COLOR;
-          note.Destroy();
-          this.score.addFailedNote();
+        if (note.Position.Z < NOTE_COMPLETION_POSITION) return;
 
-          if (noteColor === OVERDRIVE_NOTE_COLOR) {
-            const overdriveGroup = noteParent;
-            if (!overdriveGroup.IsA("Folder")) return;
-            for (const otherNote of <Part[]>overdriveGroup.GetChildren()) {
-              otherNote.Color = NORMAL_NOTE_COLOR;
-              otherNote.Parent = overdriveGroup.Parent;
-            }
-            overdriveGroup.Destroy();
-          }
-        }
+        this.score.addFailedNote();
+        this.resetOverdrive(note);
+        note.Destroy();
       });
+  }
+
+  @SpawnTask()
+  private resetOverdrive(note: MeshPart): void {
+    const overdriveGroup = note.Parent;
+    if (overdriveGroup === undefined) return;
+    if (!overdriveGroup.IsA("Folder")) return;
+
+    for (const otherNote of <Part[]>overdriveGroup.GetChildren()) {
+      otherNote.Color = NORMAL_NOTE_COLOR;
+      otherNote.Parent = overdriveGroup.Parent;
+    }
+    overdriveGroup.Destroy();
   }
 }
