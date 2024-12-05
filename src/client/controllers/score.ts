@@ -1,4 +1,4 @@
-import { Controller, Dependency, OnStart } from "@flamework/core";
+import { Controller, OnStart } from "@flamework/core";
 import { atom, subscribe } from "@rbxts/charm";
 import Signal from "@rbxts/signal";
 
@@ -9,28 +9,28 @@ import { getNotesInRadius } from "shared/game-utility";
 import type { Song } from "client/classes/song";
 
 import { SongController } from "./song";
+import { SongScoreCard } from "shared/data-models/song-stats";
 
 const { round, floor, clamp, abs } = math;
 
 const PERFECT_NOTE_RADIUS = VALID_NOTE_RADIUS / 2.5;
-const STAR_ACCURACY_THRESHOLDS = [35, 70, 80, 90, 95];
-const MAX_MULTIPLIER = 16;
-
-type StarAmount = 0 | 1 | 2 | 3 | 4 | 5;
+const MAX_MULTIPLIER = 12;
+const ACCURACY_RATIO = 75; // if your note was 1 stud away, you'd have ACCURACY_RATIO% accuracy
+const DEFAULT_SCORE_CARD: SongScoreCard = {
+  score: 0,
+  goodNotes: 0,
+  perfectNotes: 0,
+  missedNotes: 0
+};
 
 @Controller()
 export class ScoreController implements OnStart {
-  public readonly updated = new Signal;
   public readonly noteAttempted = new Signal<(notePosition: NotePosition) => void>;
   public readonly noteCompleted = new Signal<(notePosition: NotePosition) => void>;
+  public readonly card = atom<Writable<SongScoreCard>>(DEFAULT_SCORE_CARD);
   public readonly overdriveProgress = atom(0);
-  public readonly current = atom(0);
   public readonly multiplier = atom(1);
   public readonly nextMultiplierProgress = atom(0);
-  public readonly starsProgress = atom(0);
-  public goodNotes = 0;
-  public perfectNotes = 0;
-  public missedNotes = 0;
 
   private currentSong?: Song;
   private inOverdrive = false;
@@ -40,26 +40,17 @@ export class ScoreController implements OnStart {
   ) { }
 
   public onStart(): void {
-    subscribe(this.song.current, song => {
-      this.currentSong = song;
-      this.updated.Fire();
-    });
+    subscribe(this.song.current, song => this.currentSong = song);
   }
 
-  public async calculateScore(): Promise<void> {
-    if (this.currentSong === undefined) return;
-    Events.data.addSongScoreCard(this.currentSong.info.name, {
-      totalNotes: this.currentSong.totalNotes,
-      accuracy: this.getAccuracy(),
-      goodNotes: this.goodNotes,
-      perfectNotes: this.perfectNotes,
-      missedNotes: this.missedNotes,
-      points: this.current(),
-      starsProgress: this.calculateStarsProgress(),
-      stars: this.calculateStars()
-    });
+  public save(): SongScoreCard {
+    if (this.currentSong === undefined)
+      return undefined!;
 
+    const card = this.card();
     this.reset();
+    Events.data.addSongScoreCard(this.currentSong.info.name, card);
+    return card;
   }
 
   public attemptNote(notePosition: NotePosition, difficulty: SongDifficulty): void {
@@ -81,29 +72,16 @@ export class ScoreController implements OnStart {
     if (lastOfOverdriveGroup)
       this.addOverdriveProgress(25);
 
-    const accuracyRatio = 75; // if your note was 1 stud away, you'd have accuracyRatio% accuracy
-    this.addCompletedNote(isPerfect, clamp(abs(accuracyRatio / 100 / zPosition), 0.1, 1));
-    this.noteCompleted.Fire(notePosition);
-  }
-
-  public add(amount: number): void {
-    if (this.currentSong === undefined) return;
-    this.current(this.current() + (amount * this.multiplier() * (this.inOverdrive ? 2 : 1)));
-  }
-
-  public addCompletedNote(perfect: boolean, accuracy: number): void {
-    if (this.currentSong === undefined) return;
-
-    this[perfect ? "perfectNotes" : "goodNotes"]++;
-    this.addMultiplierProgress(round(30 / (this.multiplier() / 2.75)));
-    this.add(floor((10 + (perfect ? 5 : 0)) * accuracy));
-    this.updated.Fire();
+    const accuracyRatio = ACCURACY_RATIO;
+    const accuracy = clamp(abs(accuracyRatio / 100 / zPosition), 0.1, 1);
+    this.addCompletedNote(notePosition, isPerfect, accuracy);
   }
 
   public addFailedNote(): void {
-    this.missedNotes++;
+    const card = this.card();
+    card.missedNotes++;
+    this.card(card);
     this.resetMultiplier();
-    this.updated.Fire();
   }
 
   public activateOverdrive(): void {
@@ -121,24 +99,30 @@ export class ScoreController implements OnStart {
     });
   }
 
-  public addOverdriveProgress(progress: number): void {
+  private addCompletedNote(notePosition: NotePosition, perfect: boolean, accuracy: number): void {
+    this.addMultiplierProgress(round(30 / (this.multiplier() / 2.75)));
+    this.add(floor((10 + (perfect ? 5 : 0)) * accuracy));
+
+    const card = this.card();
+    card[perfect ? "perfectNotes" : "goodNotes"]++;
+    this.card(card);
+    this.noteCompleted.Fire(notePosition);
+  }
+
+  private add(amount: number): void {
+    const card = this.card();
+    card.score += amount * this.multiplier() * (this.inOverdrive ? 2 : 1);
+    this.card(card);
+  }
+
+  private addOverdriveProgress(progress: number): void {
     if (this.currentSong === undefined) return;
     this.overdriveProgress(this.overdriveProgress() + progress);
   }
 
-  public resetMultiplier(): void {
+  private resetMultiplier(): void {
     this.multiplier(1);
     this.nextMultiplierProgress(0);
-  }
-
-  public getAccuracy(): number {
-    if (this.currentSong === undefined) return 0;
-    if (this.goodNotes === 0 && this.perfectNotes === 0)
-      return 0;
-    if (this.missedNotes === 0)
-      return 100;
-
-    return (this.goodNotes + this.perfectNotes) / this.currentSong.totalNotes * 100;
   }
 
   private nextMultiplier(): void {
@@ -148,7 +132,7 @@ export class ScoreController implements OnStart {
   }
 
   private addMultiplierProgress(progress: number): void {
-    if (!this.currentSong) return;
+    if (this.currentSong === undefined) return;
     if (this.multiplier() === MAX_MULTIPLIER) return;
     this.setMultiplierProgress(this.nextMultiplierProgress() + progress);
   }
@@ -170,39 +154,8 @@ export class ScoreController implements OnStart {
 
   private reset(): void {
     this.resetMultiplier();
-    this.current(0);
     this.setOverdriveProgress(0);
-    this.goodNotes = 0;
-    this.perfectNotes = 0;
+    this.card(DEFAULT_SCORE_CARD);
     this.currentSong = undefined;
-  }
-
-  private calculateStarsProgress(): number {
-    const currentStars = this.calculateStars();
-    if (currentStars === 5)
-      return 500;
-
-    const accuracy = this.getAccuracy();
-    switch (currentStars) {
-      case 0: return accuracy / STAR_ACCURACY_THRESHOLDS[0] * 100;
-
-      case 1:
-      case 2:
-      case 3:
-      case 4: {
-        const lastThreshold = STAR_ACCURACY_THRESHOLDS[currentStars - 1];
-        const threshold = STAR_ACCURACY_THRESHOLDS[currentStars];
-        return (currentStars * 100) + ((accuracy - lastThreshold) / (threshold - lastThreshold) * 100);
-      }
-    }
-  }
-
-  private calculateStars(): StarAmount {
-    const accuracy = this.getAccuracy();
-    for (let i = 0; i < 5; i++)
-      if (accuracy >= STAR_ACCURACY_THRESHOLDS[i])
-        return <StarAmount>(i + 1);
-
-    return 0;
   }
 }

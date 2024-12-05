@@ -2,7 +2,7 @@ import { Networking } from "@flamework/networking";
 import { createBinarySerializer } from "@rbxts/flamework-binary-serializer";
 
 import type { PlayerData } from "./data-models/player-data";
-import type { SongStats } from "./data-models/song-stats";
+import type { SongScoreCard } from "./data-models/song-stats";
 
 type SerializedRemote = (packet: SerializedPacket) => void;
 type UnreliableSerializedRemote = Networking.Unreliable<(packet: SerializedPacket) => void>;
@@ -10,7 +10,7 @@ type UnreliableSerializedRemote = Networking.Unreliable<(packet: SerializedPacke
 interface ServerEvents {
   data: {
     initialize(): void;
-    addSongScoreCard(song: SongName, scoreCard: SongStats): void;
+    addSongScoreCard(song: SongName, scoreCard: SongScoreCard): void;
   };
   character: {
     toggleDefaultMovement(on: boolean): void;

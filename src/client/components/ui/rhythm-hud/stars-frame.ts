@@ -5,6 +5,7 @@ import { subscribe } from "@rbxts/charm";
 import { $nameof } from "rbxts-transform-debug";
 
 import { PlayerGui } from "client/utility";
+import { calculateStarsProgress } from "shared/game-utility";
 
 import type { ScoreController } from "client/controllers/score";
 
@@ -28,8 +29,9 @@ export class StarsFrame extends BaseComponent<{}, Frame> implements OnStart {
   ) { super(); }
 
   public onStart(): void {
-    this.updateStarsProgress(this.score.starsProgress())
-    subscribe(this.score.starsProgress, progress => this.updateStarsProgress(progress));
+    const starsProgress = calculateStarsProgress(this.score.card());
+    this.updateStarsProgress(starsProgress)
+    subscribe(this.score.card, scoreCard => this.updateStarsProgress(calculateStarsProgress(scoreCard)));
   }
 
   public reset(): void {

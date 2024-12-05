@@ -1,10 +1,12 @@
 import { Component, BaseComponent } from "@flamework/components";
 import { $nameof } from "rbxts-transform-debug";
+import { subscribe } from "@rbxts/charm";
 
 import { PlayerGui } from "client/utility";
+import { calculateAccuracy } from "shared/game-utility";
+import type { SongScoreCard } from "shared/data-models/song-stats";
 
 import type { ScoreController } from "client/controllers/score";
-import { SongController } from "client/controllers/song";
 
 interface DebugScreenInstance extends ScreenGui {
   SongStats: Frame & {
@@ -22,21 +24,19 @@ interface DebugScreenInstance extends ScreenGui {
   ancestorWhitelist: [PlayerGui]
 })
 export class DebugScreen extends BaseComponent<{}, DebugScreenInstance> {
-  public constructor(
-    private readonly score: ScoreController,
-    private readonly song: SongController
-  ) {
+  public constructor(score: ScoreController) {
     super();
-    score.updated.Connect(() => this.updateSongStats());
+    subscribe(score.card, scoreCard => this.updateSongStats(scoreCard));
   }
 
-  private updateSongStats(): void {
+  private updateSongStats(scoreCard: SongScoreCard): void {
+    const { goodNotes, perfectNotes, missedNotes } = scoreCard;
     const stats = this.instance.SongStats;
-    stats.GoodNotes.Text = "Good Notes: " + this.score.goodNotes;
-    stats.PerfectNotes.Text = "Perfect Notes: " + this.score.perfectNotes;
-    stats.CompletedNotes.Text = "Completed Notes: " + (this.score.goodNotes + this.score.perfectNotes);
-    stats.MissedNotes.Text = "Missed Notes: " + this.score.missedNotes;
-    stats.TotalNotes.Text = "Total Notes: " + this.song.current()?.totalNotes;
-    stats.Accuracy.Text = "Accuracy: " + math.round(this.score.getAccuracy()) + "%";
+    stats.GoodNotes.Text = "Good Notes: " + goodNotes;
+    stats.PerfectNotes.Text = "Perfect Notes: " + perfectNotes;
+    stats.MissedNotes.Text = "Missed Notes: " + missedNotes;
+    stats.CompletedNotes.Text = "Completed Notes: " + (goodNotes + perfectNotes);
+    stats.TotalNotes.Text = "Total Notes: " + (goodNotes + perfectNotes + missedNotes);
+    stats.Accuracy.Text = "Accuracy: " + math.round(calculateAccuracy(scoreCard)) + "%";
   }
 }
