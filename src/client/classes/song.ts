@@ -28,18 +28,17 @@ export class Song extends Destroyable {
     this.timeSinceLastBeat = this.beatDuration;
   }
 
-  public async start(): Promise<void> {
+  public start(): void {
     const audio = this.info.instance.Audio;
     this.janitor.Add(audio.Ended.Once(() => this.destroy()));
     this.janitor.Add(audio.Stopped.Once(() => this.destroy()));
-    this.active = true;
     audio.Play();
+    this.active = true;
   }
 
   public destroy(): void {
     super.destroy();
     Log.info("Cleaned up song");
-    this.timePosition = 0;
     this.timeSinceLastBeat = 0;
     this.active = false;
   }
@@ -47,15 +46,14 @@ export class Song extends Destroyable {
   public update(dt: number): void {
     if (!this.active) return;
     this.timeSinceLastBeat += dt;
-    this.timePosition += dt;
 
-    if (this.timeSinceLastBeat >= this.beatDuration) {
+    if (this.timeSinceLastBeat > this.beatDuration) {
       this.onBeat.Fire();
       this.timeSinceLastBeat -= this.beatDuration;
     }
   }
 
   public getTimePosition(): number {
-    return this.timePosition;
+    return this.info.instance.Audio.TimePosition;
   }
 }

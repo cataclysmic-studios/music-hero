@@ -22,7 +22,7 @@ export class SongController implements OnRender {
     Log.info(`Started song "${song.info.name}"`);
     this.current(song);
     await this.playIntroMetronome(song.beatDuration);
-    await song.start();
+    song.start();
   }
 
   private async playIntroMetronome(beatDuration: number): Promise<void> {

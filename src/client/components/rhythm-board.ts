@@ -12,7 +12,7 @@ import type { ScoreController } from "client/controllers/score";
 import type { SongController } from "client/controllers/song";
 
 const BEAT_STUD_LENGTH = 12;
-const NOTE_COMPLETION_POSITION = VALID_NOTE_RADIUS / 2;
+const NOTE_COMPLETION_POSITION = VALID_NOTE_RADIUS / 1.5;
 const NORMAL_NOTE_COLOR = Color3.fromRGB(102, 125, 188);
 
 @Component({
@@ -52,7 +52,7 @@ export class RhythmBoard extends BaseComponent<{}, Part & { Grid: Texture }> {
     const timePosition = this.currentSong.getTimePosition();
     const lerpPosition = (timePosition / this.currentSong.beatDuration) * BEAT_STUD_LENGTH;
     this.instance.Grid.OffsetStudsV = lerpPosition;
-    this.currentSong.noteTrack.PivotTo(this.defaultNoteTrackPivot.add(new Vector3(0, 0, lerpPosition - 0.25)));
+    this.currentSong.noteTrack.PivotTo(this.defaultNoteTrackPivot.add(new Vector3(0, 0, lerpPosition - 0.5)));
     this.checkForCompletedNotes();
   }
 
