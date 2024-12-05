@@ -7,7 +7,7 @@ import { $nameof } from "rbxts-transform-debug";
 import { PlayerGui } from "client/utility";
 import { SongDifficulty } from "shared/structs/song-info";
 
-import type { SongSelectController } from "client/controllers/song-select";
+import type { SongBuilderController } from "client/controllers/song-builder";
 
 @Component({
   tag: $nameof<DifficultyButton>(),
@@ -26,7 +26,7 @@ export class DifficultyButton extends BaseComponent<{}, GuiButton & { UICorner: 
 
   public constructor(
     private readonly components: Components,
-    private readonly selected: SongSelectController
+    private readonly songBuilder: SongBuilderController
   ) { super(); }
 
   public onStart(): void {
@@ -42,7 +42,7 @@ export class DifficultyButton extends BaseComponent<{}, GuiButton & { UICorner: 
     this.instance.MouseButton1Click.Connect(() => {
       if (this.instance.Name !== "Easy") return; // temp
 
-      this.selected.difficulty = SongDifficulty[<keyof typeof SongDifficulty>this.instance.Name];
+      this.songBuilder.builder.setDifficulty(SongDifficulty[<keyof typeof SongDifficulty>this.instance.Name]);
       for (const difficultyButton of this.components.getAllComponents<DifficultyButton>())
         difficultyButton.toggleSelected(difficultyButton.instance.Name === this.instance.Name);
     });

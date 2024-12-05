@@ -1,16 +1,15 @@
 import { Component } from "@flamework/components";
+import { startsWith } from "@rbxts/string-utils";
 import { $nameof } from "rbxts-transform-debug";
 
 import type { LogStart } from "shared/hooks";
 import { PlayerGui } from "client/utility";
+import Log from "shared/log";
 
 import { RhythmHUD } from "../rhythm-hud";
 import { MenuButton } from "client/base-components/menu-button";
-import type { SongSelectController } from "client/controllers/song-select";
+import type { SongBuilderController } from "client/controllers/song-builder";
 import type { SongController } from "client/controllers/song";
-import type { ScoreController } from "client/controllers/score";
-import { Song } from "client/classes/song";
-import { getSongInfo } from "shared/game-utility";
 
 @Component({
   tag: $nameof<MenuStartButton>(),
@@ -18,21 +17,22 @@ import { getSongInfo } from "shared/game-utility";
 })
 export class MenuStartButton extends MenuButton implements LogStart {
   public constructor(
-    private readonly selected: SongSelectController,
+    private readonly songBuilder: SongBuilderController,
     private readonly song: SongController
   ) { super(); }
 
   protected onClick(): void {
-    if (this.selected.song === undefined) return;
-    if (this.selected.difficulty === undefined) return;
-    if (this.selected.part === undefined) return;
+    try {
+      const song = this.songBuilder.builder.build();
+      this.songBuilder.reset();
 
-    RhythmHUD.enable();
-    this.menu.disable();
-    this.menu.setPage("Main");
-    const songInfo = getSongInfo(this.selected.song);
-    const song = new Song(songInfo, this.selected.difficulty, this.selected.part);
-    this.song.start(song);
-    this.selected.deselectAll();
+      RhythmHUD.enable();
+      this.menu.disable();
+      this.menu.setPage("Main");
+      this.song.start(song);
+    } catch (e) {
+      if (startsWith(tostring(e), "Failed to build song")) return;
+      Log.fatal(tostring(e));
+    }
   }
 }

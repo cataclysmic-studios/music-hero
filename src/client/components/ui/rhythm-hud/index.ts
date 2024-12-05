@@ -47,6 +47,7 @@ export class RhythmHUD extends BaseComponent<{}, PlayerGui["RhythmHUD"]> impleme
     });
   }
 
+  // TODO: this
   private addNoteCompletionVFX(position: NotePosition): void {
     // const finishPosition = this.getFinishPosition(position);
 

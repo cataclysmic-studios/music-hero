@@ -37,7 +37,7 @@ export class ScoreController implements OnStart {
   private inOverdrive = false;
 
   public onStart(): void {
-    task.delay(3, () => this.updated.Fire());
+    task.delay(1, () => this.updated.Fire());
     const song = Dependency<SongController>();
     subscribe(song.current, song => this.currentSong = song)
   }
