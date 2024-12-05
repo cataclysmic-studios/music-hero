@@ -30,22 +30,26 @@ export class ScoreController implements OnStart {
   public readonly starsProgress = atom(0);
   public goodNotes = 0;
   public perfectNotes = 0;
-  public totalNotes = 0;
   public missedNotes = 0;
 
   private currentSong?: Song;
   private inOverdrive = false;
 
+  public constructor(
+    private readonly song: SongController
+  ) { }
+
   public onStart(): void {
-    task.delay(1, () => this.updated.Fire());
-    const song = Dependency<SongController>();
-    subscribe(song.current, song => this.currentSong = song)
+    subscribe(this.song.current, song => {
+      this.currentSong = song;
+      this.updated.Fire();
+    });
   }
 
   public async calculateScore(): Promise<void> {
     if (this.currentSong === undefined) return;
     Events.data.addSongScoreCard(this.currentSong.info.name, {
-      totalNotes: this.totalNotes,
+      totalNotes: this.currentSong.totalNotes,
       accuracy: this.getAccuracy(),
       goodNotes: this.goodNotes,
       perfectNotes: this.perfectNotes,
@@ -128,10 +132,13 @@ export class ScoreController implements OnStart {
   }
 
   public getAccuracy(): number {
+    if (this.currentSong === undefined) return 0;
     if (this.goodNotes === 0 && this.perfectNotes === 0)
       return 0;
+    if (this.missedNotes === 0)
+      return 100;
 
-    return (this.goodNotes + this.perfectNotes) / this.totalNotes * 100;
+    return (this.goodNotes + this.perfectNotes) / this.currentSong.totalNotes * 100;
   }
 
   private nextMultiplier(): void {
@@ -167,7 +174,6 @@ export class ScoreController implements OnStart {
     this.setOverdriveProgress(0);
     this.goodNotes = 0;
     this.perfectNotes = 0;
-    this.totalNotes = 0;
     this.currentSong = undefined;
   }
 
