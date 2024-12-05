@@ -72,8 +72,7 @@ export class ScoreController implements OnStart {
     if (lastOfOverdriveGroup)
       this.addOverdriveProgress(25);
 
-    const accuracyRatio = ACCURACY_RATIO;
-    const accuracy = clamp(abs(accuracyRatio / 100 / zPosition), 0.1, 1);
+    const accuracy = clamp(abs(ACCURACY_RATIO / 100 / zPosition), 0.1, 1);
     this.addCompletedNote(notePosition, isPerfect, accuracy);
   }
 
