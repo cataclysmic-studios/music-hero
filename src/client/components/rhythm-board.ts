@@ -10,6 +10,7 @@ import { VALID_NOTE_RADIUS } from "shared/constants";
 
 import type { ScoreController } from "client/controllers/score";
 import type { SongController } from "client/controllers/song";
+import { OnRender } from "@flamework/core";
 
 const BEAT_STUD_LENGTH = 12;
 const NOTE_COMPLETION_POSITION = VALID_NOTE_RADIUS / 1.5;
@@ -19,22 +20,31 @@ const NORMAL_NOTE_COLOR = Color3.fromRGB(102, 125, 188);
   tag: $nameof<RhythmBoard>(),
   ancestorWhitelist: [PlayerGui]
 })
-export class RhythmBoard extends BaseComponent<{}, Part & { Grid: Texture }> {
+export class RhythmBoard extends BaseComponent<{}, Part & { Grid: Texture }> implements OnRender {
   private readonly viewport = <ViewportFrame>this.instance.Parent;
   private defaultNoteTrackPivot?: CFrame;
-  private currentSong?: Song;
 
   public constructor(
     private readonly score: ScoreController,
-    song: SongController
+    private readonly song: SongController
   ) {
     super();
-    song.updated.Connect(() => this.update());
     subscribe(song.current, song => {
-      this.currentSong = song;
       if (song === undefined) return;
       this.initializeNoteTrack(song.noteTrack);
     });
+  }
+
+  public onRender(): void {
+    const song = this.song.current();
+    if (song === undefined) return;
+    if (this.defaultNoteTrackPivot === undefined) return;
+
+    const timePosition = song.getTimePosition();
+    const lerpPosition = (timePosition / song.beatDuration) * BEAT_STUD_LENGTH;
+    this.instance.Grid.OffsetStudsV = lerpPosition;
+    song.noteTrack.PivotTo(this.defaultNoteTrackPivot.add(new Vector3(0, 0, lerpPosition - 0.5)));
+    this.checkForCompletedNotes();
   }
 
   private initializeNoteTrack(noteTrack: Model): void {
@@ -45,29 +55,19 @@ export class RhythmBoard extends BaseComponent<{}, Part & { Grid: Texture }> {
     this.defaultNoteTrackPivot = noteTrack.GetPivot();
   }
 
-  private update(): void {
-    if (this.currentSong === undefined) return;
-    if (this.defaultNoteTrackPivot === undefined) return;
-
-    const timePosition = this.currentSong.getTimePosition();
-    const lerpPosition = (timePosition / this.currentSong.beatDuration) * BEAT_STUD_LENGTH;
-    this.instance.Grid.OffsetStudsV = lerpPosition;
-    this.currentSong.noteTrack.PivotTo(this.defaultNoteTrackPivot.add(new Vector3(0, 0, lerpPosition - 0.5)));
-    this.checkForCompletedNotes();
-  }
-
+  @SpawnTask()
   private checkForCompletedNotes(): void {
-    if (this.currentSong === undefined) return;
+    const song = this.song.current();
+    if (song === undefined) return;
 
-    const allNotes = getDescendantsOfType(this.currentSong.noteTrack, "MeshPart");
-    for (const note of allNotes)
-      task.spawn(() => {
-        if (note.Position.Z < NOTE_COMPLETION_POSITION) return;
+    const notesToBeCompleted = getDescendantsOfType(song.noteTrack, "MeshPart")
+      .filter(note => note.Position.Z < NOTE_COMPLETION_POSITION);
 
-        this.score.addFailedNote();
-        this.resetOverdrive(note);
-        note.Destroy();
-      });
+    for (const note of notesToBeCompleted) {
+      this.score.addFailedNote();
+      this.resetOverdrive(note);
+      note.Destroy();
+    }
   }
 
   @SpawnTask()

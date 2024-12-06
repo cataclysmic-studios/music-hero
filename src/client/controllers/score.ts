@@ -34,20 +34,20 @@ export class ScoreController {
   public readonly nextMultiplierProgress = atom(0);
   public readonly overdriveProgress = atom(0);
 
-  private currentSong?: Song;
   private inOverdrive = false;
 
-  public constructor(song: SongController) {
-    subscribe(song.current, song => this.currentSong = song);
-  }
+  public constructor(
+    private readonly song: SongController
+  ) { }
 
   public save(): SongScoreCard {
-    if (this.currentSong === undefined)
+    const song = this.song.current();
+    if (song === undefined)
       return undefined!;
 
     const card = this.card();
     const packet = Serializers.scoreCardSave.serialize({
-      songName: this.currentSong.info.name,
+      songName: song.info.name,
       scoreCard: card
     });
 
@@ -57,11 +57,12 @@ export class ScoreController {
   }
 
   public attemptNote(notePosition: NotePosition): void {
-    if (this.currentSong === undefined) return;
-    if (notePosition === 5 && this.currentSong.difficulty !== SongDifficulty.Expert) return;
+    const song = this.song.current();
+    if (song === undefined) return;
+    if (notePosition === 5 && song.difficulty !== SongDifficulty.Expert) return;
     this.noteAttempted.Fire(notePosition);
 
-    const [pressedNote] = getNotesInRadius(this.currentSong.noteTrack, notePosition);
+    const [pressedNote] = getNotesInRadius(song.noteTrack, notePosition);
     if (pressedNote === undefined) return;
     if (pressedNote.Transparency > 0) return;
     pressedNote.Transparency = 1;
@@ -88,7 +89,7 @@ export class ScoreController {
 
   @SpawnTask()
   public activateOverdrive(): void {
-    if (this.currentSong === undefined) return;
+    if (this.song.current() === undefined) return;
     if (this.inOverdrive) return;
     if (this.overdriveProgress() === 0) return;
 
@@ -153,6 +154,5 @@ export class ScoreController {
     this.resetMultiplier();
     this.setOverdriveProgress(0);
     this.card(DEFAULT_SCORE_CARD);
-    this.currentSong = undefined;
   }
 }

@@ -65,7 +65,7 @@ export class ControlPanelController implements OnStart, LogStart {
     });
     for (const renderable of this.renderables) {
       Iris.Tree([renderable.dropdownName]);
-      renderable.renderer.renderControlPanelDropdown();
+      task.spawn(() => renderable.renderer.renderControlPanelDropdown());
       Iris.End();
     }
     Iris.End();

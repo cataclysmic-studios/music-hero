@@ -12,7 +12,6 @@ export class Song extends Destroyable {
   public active = false;
 
   private timeSinceLastBeat: number;
-  private timePosition = 0;
 
   public constructor(
     public readonly info: SongInfo,
@@ -39,8 +38,8 @@ export class Song extends Destroyable {
   public destroy(): void {
     super.destroy();
     Log.info("Cleaned up song");
-    this.timeSinceLastBeat = 0;
     this.active = false;
+    this.timeSinceLastBeat = 0;
   }
 
   public update(dt: number): void {

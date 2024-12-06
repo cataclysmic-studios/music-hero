@@ -9,7 +9,6 @@ import Log from "shared/log";
 
 @Controller()
 export class SongController implements OnRender {
-  public readonly updated = new Signal<() => void>;
   public readonly current = atom<Maybe<Song>>(undefined);
   public readonly builder = new SongBuilder;
 
@@ -17,7 +16,6 @@ export class SongController implements OnRender {
     const song = this.current();
     if (song === undefined) return;
     song.update(dt);
-    this.updated.Fire();
   }
 
   public resetBuilder(this: Writable<this>): void {
