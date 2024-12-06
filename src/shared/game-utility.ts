@@ -38,6 +38,9 @@ export function calculateStars(scoreCard: SongScoreCard): StarAmount {
 
 export function calculateAccuracy({ goodNotes, perfectNotes, missedNotes }: SongScoreCard): number {
   const totalNotes = goodNotes + perfectNotes + missedNotes;
+  if (totalNotes === 0)
+    return 0;
+
   return (goodNotes + perfectNotes) / totalNotes * 100;
 }
 
