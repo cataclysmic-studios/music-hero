@@ -1,15 +1,16 @@
-import { Controller, OnStart } from "@flamework/core";
+import { Controller } from "@flamework/core";
 import { atom, subscribe } from "@rbxts/charm";
 import Signal from "@rbxts/signal";
 
 import { Events } from "client/network";
+import { SpawnTask } from "shared/decorators";
+import { getNotesInRadius } from "shared/game-utility";
 import { SongDifficulty } from "shared/structs/song-info";
 import { VALID_NOTE_RADIUS } from "shared/constants";
-import { getNotesInRadius } from "shared/game-utility";
 import type { Song } from "client/classes/song";
+import type { SongScoreCard } from "shared/data-models/song-stats";
 
-import { SongController } from "./song";
-import { SongScoreCard } from "shared/data-models/song-stats";
+import type { SongController } from "./song";
 
 const { round, floor, clamp, abs } = math;
 
@@ -24,23 +25,19 @@ const DEFAULT_SCORE_CARD: SongScoreCard = {
 };
 
 @Controller()
-export class ScoreController implements OnStart {
+export class ScoreController {
   public readonly noteAttempted = new Signal<(notePosition: NotePosition) => void>;
   public readonly noteCompleted = new Signal<(notePosition: NotePosition) => void>;
   public readonly card = atom<Writable<SongScoreCard>>(DEFAULT_SCORE_CARD);
-  public readonly overdriveProgress = atom(0);
   public readonly multiplier = atom(1);
   public readonly nextMultiplierProgress = atom(0);
+  public readonly overdriveProgress = atom(0);
 
   private currentSong?: Song;
   private inOverdrive = false;
 
-  public constructor(
-    private readonly song: SongController
-  ) { }
-
-  public onStart(): void {
-    subscribe(this.song.current, song => this.currentSong = song);
+  public constructor(song: SongController) {
+    subscribe(song.current, song => this.currentSong = song);
   }
 
   public save(): SongScoreCard {
@@ -53,9 +50,9 @@ export class ScoreController implements OnStart {
     return card;
   }
 
-  public attemptNote(notePosition: NotePosition, difficulty: SongDifficulty): void {
+  public attemptNote(notePosition: NotePosition): void {
     if (this.currentSong === undefined) return;
-    if (notePosition === 5 && difficulty !== SongDifficulty.Expert) return;
+    if (notePosition === 5 && this.currentSong.difficulty !== SongDifficulty.Expert) return;
     this.noteAttempted.Fire(notePosition);
 
     const [pressedNote] = getNotesInRadius(this.currentSong.noteTrack, notePosition);
@@ -64,11 +61,11 @@ export class ScoreController implements OnStart {
     pressedNote.Transparency = 1;
 
     const zPosition = pressedNote.Position.Z;
-    const noteParent = pressedNote.Parent;
+    const noteParent = pressedNote.Parent!;
     pressedNote.Destroy();
 
     const isPerfect = abs(zPosition) <= PERFECT_NOTE_RADIUS;
-    const lastOfOverdriveGroup = noteParent!.Name === "OverdriveGroup" && noteParent!.GetChildren().size() === 1;
+    const lastOfOverdriveGroup = noteParent.Name === "OverdriveGroup" && noteParent.GetChildren().size() === 1;
     if (lastOfOverdriveGroup)
       this.addOverdriveProgress(25);
 
@@ -83,19 +80,18 @@ export class ScoreController implements OnStart {
     this.resetMultiplier();
   }
 
+  @SpawnTask()
   public activateOverdrive(): void {
     if (this.currentSong === undefined) return;
     if (this.inOverdrive) return;
     if (this.overdriveProgress() === 0) return;
 
     this.inOverdrive = true;
-    task.spawn(() => {
-      while (this.overdriveProgress() > 0) {
-        task.wait(0.1);
-        this.addOverdriveProgress(-1);
-      }
-      this.inOverdrive = false;
-    });
+    while (this.overdriveProgress() > 0) {
+      task.wait(0.1);
+      this.addOverdriveProgress(-1);
+    }
+    this.inOverdrive = false;
   }
 
   private addCompletedNote(notePosition: NotePosition, perfect: boolean, accuracy: number): void {
@@ -115,7 +111,6 @@ export class ScoreController implements OnStart {
   }
 
   private addOverdriveProgress(progress: number): void {
-    if (this.currentSong === undefined) return;
     this.overdriveProgress(this.overdriveProgress() + progress);
   }
 
@@ -131,13 +126,11 @@ export class ScoreController implements OnStart {
   }
 
   private addMultiplierProgress(progress: number): void {
-    if (this.currentSong === undefined) return;
     if (this.multiplier() === MAX_MULTIPLIER) return;
     this.setMultiplierProgress(this.nextMultiplierProgress() + progress);
   }
 
   private setMultiplierProgress(progress: number): void {
-    if (this.currentSong === undefined) return;
     if (progress >= 100) {
       const residual = progress - 100;
       this.nextMultiplier();
@@ -147,7 +140,6 @@ export class ScoreController implements OnStart {
   }
 
   private setOverdriveProgress(progress: number): void {
-    if (this.currentSong === undefined) return;
     this.overdriveProgress(clamp(progress, 0, 100));
   }
 

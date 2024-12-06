@@ -26,7 +26,7 @@ export class InputController implements LogStart {
       if (currentSong === undefined) return;
 
       const position = <NotePosition>(keybinds.indexOf(input.KeyCode.Value)! + 1);
-      this.score.attemptNote(position, currentSong.difficulty);
+      this.score.attemptNote(position);
     });
   }
 

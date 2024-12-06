@@ -6,7 +6,7 @@ import { $nameof } from "rbxts-transform-debug";
 
 import { PlayerGui } from "client/utility";
 
-import type { SongBuilderController } from "client/controllers/song-builder";
+import type { SongController } from "client/controllers/song";
 
 const HOVER_TRANSPARENCY = 0.7;
 const SELECT_TRANSPARENCY = 0.15;
@@ -26,7 +26,7 @@ export class PartButton extends BaseComponent<{}, ImageButton & { Icon: ImageLab
 
   public constructor(
     private readonly components: Components,
-    private readonly songBuilder: SongBuilderController
+    private readonly song: SongController
   ) { super(); }
 
   public onStart(): void {
@@ -41,7 +41,7 @@ export class PartButton extends BaseComponent<{}, ImageButton & { Icon: ImageLab
     this.instance.MouseButton1Click.Connect(() => {
       if (this.instance.Name !== "Drums") return; // temp
 
-      this.songBuilder.builder.setPart(<keyof SongParts>this.instance.Name);
+      this.song.builder.setPart(<keyof SongParts>this.instance.Name);
       for (const partButton of this.components.getAllComponents<PartButton>())
         partButton.toggleSelected(partButton.instance.Name === this.instance.Name);
     });

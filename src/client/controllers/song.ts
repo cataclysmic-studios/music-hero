@@ -4,12 +4,14 @@ import { atom } from "@rbxts/charm";
 import Signal from "@rbxts/signal";
 
 import { Song } from "client/classes/song";
+import { SongBuilder } from "client/classes/song-builder";
 import Log from "shared/log";
 
 @Controller()
 export class SongController implements OnRender {
   public readonly updated = new Signal<() => void>;
   public readonly current = atom<Maybe<Song>>(undefined);
+  public readonly builder = new SongBuilder;
 
   public onRender(dt: number): void {
     const song = this.current();
@@ -18,14 +20,19 @@ export class SongController implements OnRender {
     this.updated.Fire();
   }
 
-  public async start(song: Song): Promise<void> {
+  public resetBuilder(this: Writable<this>): void {
+    this.builder.destroy();
+    this.builder = new SongBuilder;
+  }
+
+  public start(song: Song): void {
     Log.info(`Started song "${song.info.name}"`);
     this.current(song);
-    await this.playIntroMetronome(song.beatDuration);
+    this.playIntroMetronome(song.beatDuration);
     song.start();
   }
 
-  private async playIntroMetronome(beatDuration: number): Promise<void> {
+  private playIntroMetronome(beatDuration: number): void {
     // one, two
     for (let i = 0; i < 2; i++) {
       Sound.Tick.Play();

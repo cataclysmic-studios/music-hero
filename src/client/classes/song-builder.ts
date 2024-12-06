@@ -3,7 +3,6 @@ import Destroyable from "@rbxts/destroyable";
 import { Assets } from "shared/constants";
 import { Song } from "./song";
 import type { SongDifficulty, SongInfo } from "shared/structs/song-info";
-import Log from "shared/log";
 
 function getSongInfo(songName: SongName): SongInfo {
   const song = Assets.Songs.WaitForChild(songName);
@@ -32,13 +31,10 @@ export class SongBuilder extends Destroyable {
     this.partName = partName;
   }
 
-  public build(): Song {
-    if (this.name === undefined)
-      return Log.fatal("Failed to build song: The song has no name");
-    if (this.difficulty === undefined)
-      return Log.fatal("Failed to build song: The song has no difficulty");
-    if (this.partName === undefined)
-      return Log.fatal("Failed to build song: The song has no part");
+  public tryBuild(): Maybe<Song> {
+    if (this.name === undefined) return;
+    if (this.difficulty === undefined) return;
+    if (this.partName === undefined) return;
 
     const songInfo = getSongInfo(this.name);
     return new Song(songInfo, this.difficulty, this.partName);

@@ -1,10 +1,10 @@
 import type { OnStart } from "@flamework/core";
 import { Component, BaseComponent, type Components } from "@flamework/components";
 import { TweenInfoBuilder } from "@rbxts/builders";
+import { tween } from "@rbxts/instance-utility";
 import { $nameof } from "rbxts-transform-debug";
 
-import type { SongBuilderController } from "client/controllers/song-builder";
-import { tween } from "@rbxts/instance-utility";
+import type { SongController } from "client/controllers/song";
 
 @Component({ tag: $nameof<SongCard>() })
 export class SongCard extends BaseComponent<{}, ImageButton & { Checkmark: ImageLabel; Title: TextLabel & { UIStroke: UIStroke } }> implements OnStart {
@@ -16,7 +16,7 @@ export class SongCard extends BaseComponent<{}, ImageButton & { Checkmark: Image
 
   public constructor(
     private readonly components: Components,
-    private readonly songBuilder: SongBuilderController
+    private readonly song: SongController
   ) { super(); }
 
   public onStart(): void {
@@ -27,7 +27,7 @@ export class SongCard extends BaseComponent<{}, ImageButton & { Checkmark: Image
     this.instance.MouseButton1Click.Connect(() => {
       if (this.instance.Title.Text !== "Paradise Falls") return; // temp
 
-      this.songBuilder.builder.setName(<SongName>this.instance.Title.Text);
+      this.song.builder.setName(<SongName>this.instance.Title.Text);
       for (const songCard of this.components.getAllComponents<SongCard>())
         this.instance.Checkmark.Visible = songCard.instance.Name === this.instance.Name;
     });

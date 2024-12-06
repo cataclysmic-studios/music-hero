@@ -8,7 +8,6 @@ import Log from "shared/log";
 
 import { RhythmHUD } from "../rhythm-hud";
 import { MenuButton } from "client/base-components/menu-button";
-import type { SongBuilderController } from "client/controllers/song-builder";
 import type { SongController } from "client/controllers/song";
 
 @Component({
@@ -17,22 +16,17 @@ import type { SongController } from "client/controllers/song";
 })
 export class MenuStartButton extends MenuButton implements LogStart {
   public constructor(
-    private readonly songBuilder: SongBuilderController,
     private readonly song: SongController
   ) { super(); }
 
   protected onClick(): void {
-    try {
-      const song = this.songBuilder.builder.build();
-      this.songBuilder.reset();
+    const song = this.song.builder.tryBuild();
+    if (song === undefined) return;
 
-      RhythmHUD.enable();
-      this.menu.disable();
-      this.menu.setPage("Main");
-      this.song.start(song);
-    } catch (e) {
-      if (startsWith(tostring(e), "[FATAL] Failed to build song")) return;
-      Log.fatal(tostring(e));
-    }
+    RhythmHUD.enable();
+    this.menu.disable();
+    this.menu.setPage("Main");
+    this.song.resetBuilder();
+    this.song.start(song);
   }
 }
