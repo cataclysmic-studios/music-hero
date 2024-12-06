@@ -1,6 +1,6 @@
 import type { DataType } from "@rbxts/flamework-binary-serializer";
 
-import type { SongScoreCard } from "./song-stats";
+import type { SongScoreCard } from "./song-score-card";
 
 export const INITIAL_GLOBAL_DATA: GlobalData = {
 

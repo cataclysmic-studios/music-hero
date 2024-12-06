@@ -4,7 +4,7 @@ import { subscribe } from "@rbxts/charm";
 
 import { PlayerGui } from "client/utility";
 import { calculateAccuracy } from "shared/game-utility";
-import type { SongScoreCard } from "shared/data-models/song-stats";
+import type { SongScoreCard } from "shared/data-models/song-score-card";
 
 import type { ScoreController } from "client/controllers/score";
 

@@ -1,7 +1,7 @@
 import { getDescendantsOfType } from "@rbxts/instance-utility";
 
 import { VALID_NOTE_RADIUS } from "./constants";
-import { SongScoreCard } from "./data-models/song-stats";
+import { SongScoreCard } from "./data-models/song-score-card";
 
 const NOTE_WORLD_SPACE_POSITIONS = [-6, -2, 2, 6, 10];
 const STAR_ACCURACY_THRESHOLDS = [35, 70, 80, 90, 95];

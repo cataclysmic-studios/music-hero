@@ -1,9 +1,10 @@
 import { Service } from "@flamework/core";
 
-import { LinkRemote } from "server/decorators";
+import { LinkSerializedRemote } from "server/decorators";
 import { Events } from "server/network";
+import { Serializers } from "shared/network";
 import { calculateStars } from "shared/game-utility";
-import type { SongScoreCard } from "shared/data-models/song-stats";
+import type { ScoreCardSavePacket } from "shared/structs/packets";
 import type { PlayerData } from "shared/data-models/player-data";
 
 import type { DataService } from "./third-party/data";
@@ -14,8 +15,8 @@ export class ScoreService {
     private readonly data: DataService
   ) { }
 
-  @LinkRemote(Events.data.addSongScoreCard)
-  public addSongScoreCard(player: Player, songName: SongName, scoreCard: SongScoreCard): void {
+  @LinkSerializedRemote(Events.data.saveScoreCard, Serializers.scoreCardSave)
+  public saveScoreCard(player: Player, { songName, scoreCard }: ScoreCardSavePacket): void {
     const data = this.data.get<Writable<PlayerData>>(player);
     if (data.songScores[songName] === undefined)
       data.songScores[songName] = [];

@@ -8,9 +8,10 @@ import { getNotesInRadius } from "shared/game-utility";
 import { SongDifficulty } from "shared/structs/song-info";
 import { VALID_NOTE_RADIUS } from "shared/constants";
 import type { Song } from "client/classes/song";
-import type { SongScoreCard } from "shared/data-models/song-stats";
+import type { SongScoreCard } from "shared/data-models/song-score-card";
 
 import type { SongController } from "./song";
+import { Serializers } from "shared/network";
 
 const { round, floor, clamp, abs } = math;
 
@@ -45,8 +46,13 @@ export class ScoreController {
       return undefined!;
 
     const card = this.card();
+    const packet = Serializers.scoreCardSave.serialize({
+      songName: this.currentSong.info.name,
+      scoreCard: card
+    });
+
     this.reset();
-    Events.data.addSongScoreCard(this.currentSong.info.name, card);
+    Events.data.saveScoreCard(packet);
     return card;
   }
 
